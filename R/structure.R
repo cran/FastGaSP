@@ -44,8 +44,9 @@ if(!isGeneric("predict")) {
 }
 
 setMethod("predict", "fgasp",
-          definition=function(param=NA,object, testing_input, var_data=TRUE){
-            predict.fgasp(param=param,object=object,testing_input=testing_input,var_data=var_data)
+          definition=function(param=NA,object, testing_input, var_data=TRUE,sigma_2=NULL){
+            predict.fgasp(param=param,object=object,testing_input=testing_input,var_data=var_data,
+                          sigma_2=sigma_2)
           }
 )
 

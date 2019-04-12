@@ -15,9 +15,9 @@
 fgasp <- function(input, output, have_noise=TRUE, kernel_type='matern_5_2'){
 
 
-  if(kernel_type!='matern_5_2'){
+  if( (kernel_type!='matern_5_2')&(kernel_type!='exp') ){
     stop("the current version only support the Matern covariance with smoothness 
-         parameter being 2.5. \n")
+         parameter being 2.5 or 0.5 (exponential kernel). \n")
   }
   
   ##if the input is not sorted so we will sort them
@@ -51,6 +51,7 @@ fgasp <- function(input, output, have_noise=TRUE, kernel_type='matern_5_2'){
 show.fgasp <- function(object) {	
   cat('Number of observations: ',object@num_obs,'\n')
   cat('Have noise: ',object@have_noise,'\n')
+  cat('Type of kernel: ',object@kernel_type,'\n')
   
 }
 
@@ -65,21 +66,23 @@ log_lik<-function(param,object){
   }
   
   log_det_S2=Get_log_det_S2(param,object@have_noise,object@delta_x,
-                            object@output);
+                            object@output, object@kernel_type);
   ##log likelihood
   -log_det_S2[[1]]/2-(object@num_obs)/2*log(log_det_S2[[2]])
 }
 
 ##prediction 
-predict.fgasp<-function(param,object,testing_input,var_data=TRUE){
+predict.fgasp<-function(param,object,testing_input,var_data=TRUE,sigma_2=NULL){
   param=as.vector(param)
   if(object@have_noise==T && length(param)!=2){
     stop("Please specify both the log inverse range parameter 
           and log nugget parameter. \n")
   }
-  
-  sigma_2_hat=Get_log_det_S2(param,object@have_noise,object@delta_x,
-                             object@output)[[2]]/object@num_obs
+  ## if sigma_2 is not given, I will estimate it
+  if(is.null(sigma_2)){
+  sigma_2=Get_log_det_S2(param,object@have_noise,object@delta_x,
+                             object@output,object@kernel_type)[[2]]/object@num_obs
+  }
   
   predictobj<- new("predictobj.fgasp")
   
@@ -121,13 +124,13 @@ predict.fgasp<-function(param,object,testing_input,var_data=TRUE){
   
   
   KF_smoother_result=Kalman_smoother(param, object@have_noise,
-                                     index_all, delta_x_all_here,object@output,sigma_2_hat)
+                                     index_all, delta_x_all_here,object@output,sigma_2,object@kernel_type)
   if(length(which(delta_x_all==0))==0){
     predictobj@mean=KF_smoother_result[[1]][testing_loc]
     if(var_data==T | object@have_noise==F){
        predictobj@var=KF_smoother_result[[2]][testing_loc]
     }else{
-      predictobj@var=KF_smoother_result[[2]][testing_loc]-sigma_2_hat*exp(param[2])
+      predictobj@var=KF_smoother_result[[2]][testing_loc]-sigma_2*exp(param[2])
     }
   }else{##enlarge it to the orginal long sequence that may contain knots. 
     res=rep(NA,length(input_all_ori))
@@ -140,7 +143,7 @@ predict.fgasp<-function(param,object,testing_input,var_data=TRUE){
     if(var_data==T | object@have_noise==F){
       predictobj@var=res[testing_loc]
     }else{
-      predictobj@var=res[testing_loc]-sigma_2_hat*exp(param[2])
+      predictobj@var=res[testing_loc]-sigma_2*exp(param[2])
     }
     
   }

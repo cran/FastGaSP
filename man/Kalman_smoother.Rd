@@ -7,7 +7,7 @@ the predictive mean and predictive variance by Kalman Smoother
 This function computes the predictive mean and predictive variance on the sorted input and testing input  by the Kalman Smoother.
 }
 \usage{
-Kalman_smoother(param,have_noise,index_obs,delta_x_all,output,sigma_2_hat)
+Kalman_smoother(param,have_noise,index_obs,delta_x_all,output,sigma_2_hat,kernel_type)
 }
 \arguments{
   \item{param}{a vector of parameters. The first parameter is the natural logarithm of the inverse range parameter in the kernel function. If the data contain noise, the second parameter is the logarithm of the nugget-variance ratio parameter.
@@ -20,7 +20,9 @@ Kalman_smoother(param,have_noise,index_obs,delta_x_all,output,sigma_2_hat)
     \item{delta_x_all}{a vector for the differences between the sorted input and testing input locations.}
     
     \item{output}{a  vector with dimension num_obs x 1 for the observations at the sorted input locations.}
-        \item{sigma_2_hat}{a numerical value of estimated variance parameter of the covariance function.}
+        \item{sigma_2_hat}{a numerical value of variance parameter of the covariance function.}
+     \item{kernel_type}{A \code{character} specifying the type of kernel.}
+
 }
 
 

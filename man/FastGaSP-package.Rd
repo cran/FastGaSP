@@ -84,7 +84,7 @@ est_all$par
 
 ##estimate variance 
 est.var=Get_log_det_S2(est_all$par,fgasp.model@have_noise,fgasp.model@delta_x,
-                          fgasp.model@output)[[2]]/fgasp.model@num_obs
+                          fgasp.model@output,fgasp.model@kernel_type)[[2]]/fgasp.model@num_obs
 est.var
 
 ###1. Do some interpolation test 

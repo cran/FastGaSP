@@ -15,9 +15,9 @@ using namespace Eigen;
  
 
 //July 16, 2018
-////construct_W0 
+////Construct_W0_matern_5_2 
 // [[Rcpp::export]] 
-MatrixXd Construct_W0(const double sigma2, const double lambda){ 
+MatrixXd Construct_W0_matern_5_2(const double sigma2, const double lambda){ 
   //int num_dim=sigma2.size(); 
   
   Eigen::MatrixXd W0= Eigen::MatrixXd::Zero(3,3); 
@@ -31,10 +31,24 @@ MatrixXd Construct_W0(const double sigma2, const double lambda){
   return W0; 
 } 
 
+//July 16, 2018
+////Construct_W0_exp 
+// [[Rcpp::export]] 
+MatrixXd Construct_W0_exp(const double sigma2, const double lambda){ 
+  //int num_dim=sigma2.size(); 
+  
+  Eigen::MatrixXd W0= Eigen::MatrixXd::Zero(1,1); 
+
+  W0(0,0)=sigma2; 
+  
+  return W0; 
+} 
+
+
  
- ////construct_G 
+ ////Construct_G_matern_5_2 
  // [[Rcpp::export]] 
- List Construct_G(Eigen::VectorXd delta_x, double lambda){  //be careful about delta_x,lambda if one only wants to sample one 
+ List Construct_G_matern_5_2(Eigen::VectorXd delta_x, double lambda){  //be careful about delta_x,lambda if one only wants to sample one 
    int num_obs=delta_x.size()+1; 
    //int num_dim=lambda.size();  
    List GG(num_obs);  
@@ -64,9 +78,26 @@ MatrixXd Construct_W0(const double sigma2, const double lambda){
    return GG; 
 } 
 
-////construct_W  
+////Construct_G_exp
 // [[Rcpp::export]] 
-List Construct_W(double sigma2,Eigen::VectorXd delta_x, double lambda, MatrixXd W0){  //be careful about delta_x,lambda if one only wants to sample one 
+List Construct_G_exp(Eigen::VectorXd delta_x, double lambda){  //be careful about delta_x,lambda if one only wants to sample one 
+  int num_obs=delta_x.size()+1; 
+  //int num_dim=lambda.size();  
+  List GG(num_obs);  
+  GG[0]=Eigen::MatrixXd::Zero(1,1); 
+  Eigen::MatrixXd d= Eigen::MatrixXd::Zero(1,1); 
+  
+  for(int j_GG=0;j_GG<(num_obs-1);j_GG++){ 
+    d(0,0)=exp(-delta_x[j_GG]*lambda);
+    GG[j_GG+1]=d; 
+  }
+
+  return GG;
+}
+
+////Construct_W_matern_5_2  
+// [[Rcpp::export]] 
+List Construct_W_matern_5_2(double sigma2,Eigen::VectorXd delta_x, double lambda, MatrixXd W0){  //be careful about delta_x,lambda if one only wants to sample one 
   int num_obs=delta_x.size()+1; 
   //int num_dim=sigma2.size();  
   List Wi(num_obs);  
@@ -97,7 +128,25 @@ List Construct_W(double sigma2,Eigen::VectorXd delta_x, double lambda, MatrixXd 
     //} 
   } 
   return Wi; 
-} 
+}
+
+
+////Construct_W_matern_5_2  
+// [[Rcpp::export]] 
+List Construct_W_exp(double sigma2, Eigen::VectorXd delta_x, double lambda, MatrixXd W0){  //be careful about delta_x,lambda if one only wants to sample one 
+  int num_obs=delta_x.size()+1; 
+  //int num_dim=sigma2.size();  
+  List Wi(num_obs);  
+  Wi[0]=W0; 
+  Eigen::MatrixXd d= Eigen::MatrixXd::Zero(1,1); 
+  
+  for(int j_Wi=0;j_Wi<(num_obs-1);j_Wi++){ 
+    d(0,0)=1-exp(-2*delta_x[j_Wi]*lambda);
+    Wi[j_Wi+1]=d;
+  }
+  
+  return Wi;
+}
 
 ////Get_Q_K  
 // [[Rcpp::export]] 
@@ -138,7 +187,8 @@ List Get_Q_K(const List GG,const List  W,const Eigen::MatrixXd C0,const double V
 
 ////Get_log_det_S2
 // [[Rcpp::export]] 
-List Get_log_det_S2(const Eigen::VectorXd param,const bool have_noise,const Eigen::VectorXd delta_x,const Eigen::VectorXd output){
+List Get_log_det_S2(const Eigen::VectorXd param,const bool have_noise,const Eigen::VectorXd delta_x,const Eigen::VectorXd output,
+                    const  String kernel_type){
   
   //int n1=output_KF.rows();
   //int n2=output_KF.cols();
@@ -146,29 +196,37 @@ List Get_log_det_S2(const Eigen::VectorXd param,const bool have_noise,const Eige
   int n=output.rows();
   
   double gamma=1.0/exp(param[0]);
-  double lambda=sqrt(5.0)/gamma;
   
   double VV=0;
   if(have_noise){
-     VV=exp(param[1]);
+    VV=exp(param[1]);
   }
-  
-  //param.tail(k).array().exp().matrix();
-  
   
   Eigen::MatrixXd    W0;
   List    GG;
-
+  
   List    W;
   List    Q_K;
+  
+  
+  double lambda=0;
+  if(kernel_type=="matern_5_2"){
+    lambda=sqrt(5.0)/gamma;
+  
+  //param.tail(k).array().exp().matrix();
 
+  W0=Construct_W0_matern_5_2(1.0,lambda);   
+  GG=Construct_G_matern_5_2(delta_x,lambda);  
+  W=Construct_W_matern_5_2(1.0,delta_x,lambda,W0);
   
-
-  W0=Construct_W0(1.0,lambda);   
-  GG=Construct_G(delta_x,lambda);  
-  W=Construct_W(1.0,delta_x,lambda,W0);
-  
-  
+  }else if(kernel_type=="exp"){
+    
+    lambda=1.0/gamma;
+    W0=Construct_W0_exp(1.0,lambda);  
+    GG=Construct_G_exp(delta_x,lambda);  
+    W=Construct_W_exp(1.0,delta_x,lambda,W0);
+    
+  }
 
   Q_K=Get_Q_K(GG,W,W0,VV);
   
@@ -406,12 +464,13 @@ MatrixXd Get_s_1st(const List m,const List a,const List C,const List KK){
 
 // [[Rcpp::export]] 
 List Kalman_smoother(const VectorXd param,const bool have_noise,const VectorXi index_obs, 
-                     const VectorXd delta_x_all, const VectorXd output, const double sigma_2_hat){
+                     const VectorXd delta_x_all, const VectorXd output, const double sigma_2_hat,
+                     const String kernel_type){
   //int n1=output_KF.rows();
   //int n2=output_KF.cols();
   
   double gamma=1.0/exp(param[0]);
-  double lambda=sqrt(5.0)/gamma;
+  //double lambda=sqrt(5.0)/gamma;
   
   
   double VV=0;
@@ -422,9 +481,29 @@ List Kalman_smoother(const VectorXd param,const bool have_noise,const VectorXi i
   //param.tail(k).array().exp().matrix();
   
   
-  Eigen::MatrixXd W0=Construct_W0(1.0,lambda);   
-  List GG=Construct_G(delta_x_all,lambda);  
-  List W=Construct_W(1.0,delta_x_all,lambda,W0);
+  Eigen::MatrixXd W0;
+  List GG;
+  List W;
+  
+  double lambda=0;
+  if(kernel_type=="matern_5_2"){
+    lambda=sqrt(5.0)/gamma;
+    
+    //param.tail(k).array().exp().matrix();
+    
+    W0=Construct_W0_matern_5_2(1.0,lambda);   
+    GG=Construct_G_matern_5_2(delta_x_all,lambda);  
+    W=Construct_W_matern_5_2(1.0,delta_x_all,lambda,W0);
+    
+  }else if(kernel_type=="exp"){
+    
+    lambda=1.0/gamma;
+    W0=Construct_W0_exp(1.0,lambda);  
+    GG=Construct_G_exp(delta_x_all,lambda);  
+    W=Construct_W_exp(1.0,delta_x_all,lambda,W0);
+    
+  }
+  
   
   
   List C_R_K=Get_C_R_K_pred(index_obs, GG,W, W0, VV);

@@ -7,7 +7,7 @@ the natural logarithm of the determinant of the correlation matrix and the estim
 This function computes the natural logarithm of the determinant of the correlation matrix and the estimated sum of squares for computing the profile likelihood. 
 }
 \usage{
-Get_log_det_S2(param,have_noise,delta_x,output)
+Get_log_det_S2(param,have_noise,delta_x,output,kernel_type)
 }
 \arguments{
   \item{param}{a vector of parameters. The first parameter is the natural logarithm of the inverse range parameter in the kernel function. If the data contain noise, the second parameter is the logarithm of the nugget-variance ratio parameter.
@@ -16,6 +16,7 @@ Get_log_det_S2(param,have_noise,delta_x,output)
 %%     ~~Describe \code{response} here~~
     \item{delta_x}{a vector with dimension (num_obs-1) x 1 for the differences between the sorted input locations.}
     \item{output}{a  vector with dimension num_obs x 1 for the observations at the sorted input locations.}
+    \item{kernel_type}{A \code{character} specifying the type of kernel.}
 
 
 }

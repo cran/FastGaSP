@@ -12,7 +12,7 @@ Objects of this class are created and initialized with the function \code{\link{
 	 \describe{
     \item{\code{num_obs}:}{object of class \code{integer}. The number of experimental observations.}
     \item{\code{have_noise}:}{object of class \code{logical} to specify whether the the model has a noise or not. "TRUE" means the model contains a noise and "FALSE" means the model does not contain a noise.}
-    \item{\code{kernel_type}:}{a \code{character} to specify the type of kernel to use.}
+    \item{\code{kernel_type}:}{a \code{character} to specify the type of kernel to use.The current version supports kernel_type to be "matern_5_2" or "exp", meaning that the matern kernel with roughness parameter being 2.5 or 0.5 (exponent kernel), respectively. }
     \item{\code{input}:}{object of class \code{vector} with dimension num_obs x 1 for the sorted input locations.}
         \item{\code{delta_x}:}{object of class \code{vector} with dimension (num_obs-1) x 1 for the differences between the sorted input locations.}
     \item{\code{output}:}{object of class \code{vector} with dimension num_obs x 1 for the observations at the sorted input locations.}

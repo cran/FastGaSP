@@ -7,33 +7,57 @@
 
 using namespace Rcpp;
 
-// Construct_W0
-MatrixXd Construct_W0(const double sigma2, const double lambda);
-RcppExport SEXP _FastGaSP_Construct_W0(SEXP sigma2SEXP, SEXP lambdaSEXP) {
+// Construct_W0_matern_5_2
+MatrixXd Construct_W0_matern_5_2(const double sigma2, const double lambda);
+RcppExport SEXP _FastGaSP_Construct_W0_matern_5_2(SEXP sigma2SEXP, SEXP lambdaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const double >::type sigma2(sigma2SEXP);
     Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
-    rcpp_result_gen = Rcpp::wrap(Construct_W0(sigma2, lambda));
+    rcpp_result_gen = Rcpp::wrap(Construct_W0_matern_5_2(sigma2, lambda));
     return rcpp_result_gen;
 END_RCPP
 }
-// Construct_G
-List Construct_G(Eigen::VectorXd delta_x, double lambda);
-RcppExport SEXP _FastGaSP_Construct_G(SEXP delta_xSEXP, SEXP lambdaSEXP) {
+// Construct_W0_exp
+MatrixXd Construct_W0_exp(const double sigma2, const double lambda);
+RcppExport SEXP _FastGaSP_Construct_W0_exp(SEXP sigma2SEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< const double >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(Construct_W0_exp(sigma2, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Construct_G_matern_5_2
+List Construct_G_matern_5_2(Eigen::VectorXd delta_x, double lambda);
+RcppExport SEXP _FastGaSP_Construct_G_matern_5_2(SEXP delta_xSEXP, SEXP lambdaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type delta_x(delta_xSEXP);
     Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
-    rcpp_result_gen = Rcpp::wrap(Construct_G(delta_x, lambda));
+    rcpp_result_gen = Rcpp::wrap(Construct_G_matern_5_2(delta_x, lambda));
     return rcpp_result_gen;
 END_RCPP
 }
-// Construct_W
-List Construct_W(double sigma2, Eigen::VectorXd delta_x, double lambda, MatrixXd W0);
-RcppExport SEXP _FastGaSP_Construct_W(SEXP sigma2SEXP, SEXP delta_xSEXP, SEXP lambdaSEXP, SEXP W0SEXP) {
+// Construct_G_exp
+List Construct_G_exp(Eigen::VectorXd delta_x, double lambda);
+RcppExport SEXP _FastGaSP_Construct_G_exp(SEXP delta_xSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type delta_x(delta_xSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(Construct_G_exp(delta_x, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Construct_W_matern_5_2
+List Construct_W_matern_5_2(double sigma2, Eigen::VectorXd delta_x, double lambda, MatrixXd W0);
+RcppExport SEXP _FastGaSP_Construct_W_matern_5_2(SEXP sigma2SEXP, SEXP delta_xSEXP, SEXP lambdaSEXP, SEXP W0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -41,7 +65,21 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::VectorXd >::type delta_x(delta_xSEXP);
     Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
     Rcpp::traits::input_parameter< MatrixXd >::type W0(W0SEXP);
-    rcpp_result_gen = Rcpp::wrap(Construct_W(sigma2, delta_x, lambda, W0));
+    rcpp_result_gen = Rcpp::wrap(Construct_W_matern_5_2(sigma2, delta_x, lambda, W0));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Construct_W_exp
+List Construct_W_exp(double sigma2, Eigen::VectorXd delta_x, double lambda, MatrixXd W0);
+RcppExport SEXP _FastGaSP_Construct_W_exp(SEXP sigma2SEXP, SEXP delta_xSEXP, SEXP lambdaSEXP, SEXP W0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type sigma2(sigma2SEXP);
+    Rcpp::traits::input_parameter< Eigen::VectorXd >::type delta_x(delta_xSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< MatrixXd >::type W0(W0SEXP);
+    rcpp_result_gen = Rcpp::wrap(Construct_W_exp(sigma2, delta_x, lambda, W0));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -60,8 +98,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // Get_log_det_S2
-List Get_log_det_S2(const Eigen::VectorXd param, const bool have_noise, const Eigen::VectorXd delta_x, const Eigen::VectorXd output);
-RcppExport SEXP _FastGaSP_Get_log_det_S2(SEXP paramSEXP, SEXP have_noiseSEXP, SEXP delta_xSEXP, SEXP outputSEXP) {
+List Get_log_det_S2(const Eigen::VectorXd param, const bool have_noise, const Eigen::VectorXd delta_x, const Eigen::VectorXd output, const String kernel_type);
+RcppExport SEXP _FastGaSP_Get_log_det_S2(SEXP paramSEXP, SEXP have_noiseSEXP, SEXP delta_xSEXP, SEXP outputSEXP, SEXP kernel_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -69,7 +107,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type have_noise(have_noiseSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd >::type delta_x(delta_xSEXP);
     Rcpp::traits::input_parameter< const Eigen::VectorXd >::type output(outputSEXP);
-    rcpp_result_gen = Rcpp::wrap(Get_log_det_S2(param, have_noise, delta_x, output));
+    Rcpp::traits::input_parameter< const String >::type kernel_type(kernel_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(Get_log_det_S2(param, have_noise, delta_x, output, kernel_type));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -131,8 +170,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // Kalman_smoother
-List Kalman_smoother(const VectorXd param, const bool have_noise, const VectorXi index_obs, const VectorXd delta_x_all, const VectorXd output, const double sigma_2_hat);
-RcppExport SEXP _FastGaSP_Kalman_smoother(SEXP paramSEXP, SEXP have_noiseSEXP, SEXP index_obsSEXP, SEXP delta_x_allSEXP, SEXP outputSEXP, SEXP sigma_2_hatSEXP) {
+List Kalman_smoother(const VectorXd param, const bool have_noise, const VectorXi index_obs, const VectorXd delta_x_all, const VectorXd output, const double sigma_2_hat, const String kernel_type);
+RcppExport SEXP _FastGaSP_Kalman_smoother(SEXP paramSEXP, SEXP have_noiseSEXP, SEXP index_obsSEXP, SEXP delta_x_allSEXP, SEXP outputSEXP, SEXP sigma_2_hatSEXP, SEXP kernel_typeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -142,22 +181,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const VectorXd >::type delta_x_all(delta_x_allSEXP);
     Rcpp::traits::input_parameter< const VectorXd >::type output(outputSEXP);
     Rcpp::traits::input_parameter< const double >::type sigma_2_hat(sigma_2_hatSEXP);
-    rcpp_result_gen = Rcpp::wrap(Kalman_smoother(param, have_noise, index_obs, delta_x_all, output, sigma_2_hat));
+    Rcpp::traits::input_parameter< const String >::type kernel_type(kernel_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(Kalman_smoother(param, have_noise, index_obs, delta_x_all, output, sigma_2_hat, kernel_type));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_FastGaSP_Construct_W0", (DL_FUNC) &_FastGaSP_Construct_W0, 2},
-    {"_FastGaSP_Construct_G", (DL_FUNC) &_FastGaSP_Construct_G, 2},
-    {"_FastGaSP_Construct_W", (DL_FUNC) &_FastGaSP_Construct_W, 4},
+    {"_FastGaSP_Construct_W0_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_W0_matern_5_2, 2},
+    {"_FastGaSP_Construct_W0_exp", (DL_FUNC) &_FastGaSP_Construct_W0_exp, 2},
+    {"_FastGaSP_Construct_G_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_G_matern_5_2, 2},
+    {"_FastGaSP_Construct_G_exp", (DL_FUNC) &_FastGaSP_Construct_G_exp, 2},
+    {"_FastGaSP_Construct_W_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_W_matern_5_2, 4},
+    {"_FastGaSP_Construct_W_exp", (DL_FUNC) &_FastGaSP_Construct_W_exp, 4},
     {"_FastGaSP_Get_Q_K", (DL_FUNC) &_FastGaSP_Get_Q_K, 4},
-    {"_FastGaSP_Get_log_det_S2", (DL_FUNC) &_FastGaSP_Get_log_det_S2, 4},
+    {"_FastGaSP_Get_log_det_S2", (DL_FUNC) &_FastGaSP_Get_log_det_S2, 5},
     {"_FastGaSP_Get_C_R_K_pred", (DL_FUNC) &_FastGaSP_Get_C_R_K_pred, 5},
     {"_FastGaSP_Get_m_a_pred", (DL_FUNC) &_FastGaSP_Get_m_a_pred, 4},
     {"_FastGaSP_Get_S_KK", (DL_FUNC) &_FastGaSP_Get_S_KK, 4},
     {"_FastGaSP_Get_s_1st", (DL_FUNC) &_FastGaSP_Get_s_1st, 4},
-    {"_FastGaSP_Kalman_smoother", (DL_FUNC) &_FastGaSP_Kalman_smoother, 6},
+    {"_FastGaSP_Kalman_smoother", (DL_FUNC) &_FastGaSP_Kalman_smoother, 7},
     {NULL, NULL, 0}
 };
 

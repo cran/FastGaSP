@@ -9,7 +9,7 @@ Prediction and uncertainty quantification on the testing input using a GaSP mode
 This function computes the predictive mean and variance on the given testing input using a GaSP model.
 }
 \usage{
-\S4method{predict}{fgasp}(param,object, testing_input, var_data=TRUE)
+\S4method{predict}{fgasp}(param,object, testing_input, var_data=TRUE, sigma_2=NULL)
 }
 \arguments{
   \item{param}{a vector of parameters. The first parameter is the natural logarithm of the inverse range parameter in the kernel function. If the data contain noise, the second parameter is the logarithm of the nugget-variance ratio parameter.
@@ -21,6 +21,7 @@ This function computes the predictive mean and variance on the given testing inp
 
   \item{var_data}{a bool valueto decide whether the noise of the data is included for computing the posterior predictive variance.
 }
+   \item{sigma_2}{a numerical value specifying the variance of the kernel function. If given, the package uses this parameter for prediction.}
 }
 
 \value{
@@ -98,7 +99,7 @@ est_all$par
 
 ##estimate variance 
 est.var=Get_log_det_S2(est_all$par,fgasp.model@have_noise,fgasp.model@delta_x,
-                          fgasp.model@output)[[2]]/fgasp.model@num_obs
+                          fgasp.model@output,fgasp.model@kernel_type)[[2]]/fgasp.model@num_obs
 est.var
 
 ###1. Do some interpolation test 
@@ -246,6 +247,8 @@ est_all$par
 num_test=200
 testing_input=runif(num_test) ##there are the input where you don't have observations
 
+##one may sort the testing_input or not, and the prediction will be on the sorted testing_input
+##testing_input=sort(testing_input)
 
 ## two ways of prediction
 pred.model=predict(param=est_all$par,object=fgasp.model,testing_input=testing_input)

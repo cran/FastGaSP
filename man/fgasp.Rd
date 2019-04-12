@@ -23,7 +23,7 @@ Creating an \code{fgasp} class for a GaSP model with matern covariance.
 %%     ~~Describe \code{response} here~~
 }
 
-  \item{kernel_type}{a character to specify the type of kernel to use. 
+  \item{kernel_type}{a \code{character} to specify the type of kernel to use. The current version supports kernel_type to be "matern_5_2" or "exp", meaning that the matern kernel with roughness parameter being 2.5 or 0.5 (exponent kernel), respectively. 
 %%     ~~Describe \code{trend} here~~
 }
 
