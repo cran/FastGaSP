@@ -33,8 +33,12 @@ Get_log_det_S2 <- function(param, have_noise, delta_x, output, kernel_type) {
     .Call('_FastGaSP_Get_log_det_S2', PACKAGE = 'FastGaSP', param, have_noise, delta_x, output, kernel_type)
 }
 
-Get_C_R_K_pred <- function(index, GG, W, C0, VV) {
-    .Call('_FastGaSP_Get_C_R_K_pred', PACKAGE = 'FastGaSP', index, GG, W, C0, VV)
+Get_L_inv_y <- function(GG, VV, Q, K, output) {
+    .Call('_FastGaSP_Get_L_inv_y', PACKAGE = 'FastGaSP', GG, VV, Q, K, output)
+}
+
+Get_C_R_K_Q <- function(index, GG, W, C0, VV) {
+    .Call('_FastGaSP_Get_C_R_K_Q', PACKAGE = 'FastGaSP', index, GG, W, C0, VV)
 }
 
 Get_m_a_pred <- function(index, output_vec, GG, K) {
@@ -51,5 +55,13 @@ Get_s_1st <- function(m, a, C, KK) {
 
 Kalman_smoother <- function(param, have_noise, index_obs, delta_x_all, output, sigma_2_hat, kernel_type) {
     .Call('_FastGaSP_Kalman_smoother', PACKAGE = 'FastGaSP', param, have_noise, index_obs, delta_x_all, output, sigma_2_hat, kernel_type)
+}
+
+Sample_KF <- function(GG, W, C0, VV, kernel_type, sample_type) {
+    .Call('_FastGaSP_Sample_KF', PACKAGE = 'FastGaSP', GG, W, C0, VV, kernel_type, sample_type)
+}
+
+Sample_KF_post <- function(index_obs, C_R_K_Q, W0, GG, W, VV, output, kernel_type, sample_type) {
+    .Call('_FastGaSP_Sample_KF_post', PACKAGE = 'FastGaSP', index_obs, C_R_K_Q, W0, GG, W, VV, output, kernel_type, sample_type)
 }
 

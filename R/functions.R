@@ -152,3 +152,9 @@ predict.fgasp<-function(param,object,testing_input,var_data=TRUE,sigma_2=NULL){
   
 }
 
+###simulate
+#simulate.fgasp <- function (param,object,...){
+  
+#}
+
+

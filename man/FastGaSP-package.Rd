@@ -26,9 +26,10 @@ Maintainer: \packageMaintainer{FastGaSP}
 Hartikainen, J. and Sarkka, S. (2010). \emph{Kalman filtering and smoothing solutions to temporal gaussian process regression models},  \emph{Machine Learning for Signal Processing (MLSP), 2010 IEEE International Workshop},  379-384.
 
 
+M. Gu and Y. Xu (2020), \emph{Nonseparable Gaussian stochastic process: a unified
+view and computational strategy}, \emph{Fast Nonseparable Gaussian Stochastic Process With Application to Methylation Level Interpolation}, \emph{Journal of Computational and Graphical Statistics}, \bold{29}, 250-260.
 
-M. Gu, Y. Xu (2017), \emph{Nonseparable Gaussian stochastic process: a unified
-view and computational strategy}, arXiv:1711.11501.
+M. Gu and W. Shen (2020), \emph{Generalized probabilistic principal component analysis of correlated data}, \emph{Journal of Machine Learning Research}, \bold{21}, 13-1.
 
 M. Gu, X. Wang and J.O. Berger (2018), \emph{Robust Gaussian Stochastic Process Emulation}, \emph{Annals of Statistics}, \bold{46}, 3038-3066.
 

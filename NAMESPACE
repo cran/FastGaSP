@@ -6,7 +6,7 @@ importFrom("Rcpp", "evalCpp")
 importFrom("stats","rnorm","qnorm","sd","optim","optimize")
 importFrom("graphics","legend","plot")
 # Exports
-export(fgasp, log_lik, Get_log_det_S2,Kalman_smoother)
+export(fgasp, log_lik, Get_log_det_S2,Kalman_smoother,Get_C_R_K_Q,Sample_KF,Sample_KF_post,Construct_W0_matern_5_2,Construct_W0_exp,Construct_G_matern_5_2,Construct_G_exp,Construct_W_matern_5_2,Construct_W_exp,Get_L_inv_y)
 exportMethods(show,predict)
 exportClasses(fgasp,predictobj.fgasp)
 

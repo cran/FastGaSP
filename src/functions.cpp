@@ -7,6 +7,8 @@
 #include <cmath> 
 #include "ctools.h"
 // [[Rcpp::depends(RcppEigen)]] 
+//#include <chrono>
+//#include <random>
 
 using namespace Rcpp;
 using namespace std;
@@ -272,17 +274,59 @@ List Get_log_det_S2(const Eigen::VectorXd param,const bool have_noise,const Eige
 }
 
 
-//double log_lik_GP_fast(const vectorXd param, const VectorXd delta_x, const VectorXd output){
-//  
-//}
+
+
+//  this function output the L^{-1}y given  Q matrix and K matrix
+// [[Rcpp::export]] 
+VectorXd Get_L_inv_y(const List GG,const double VV,const Eigen::VectorXd Q, const Eigen::MatrixXd K,  const Eigen::VectorXd output){
+  
+  //Eigen::VectorXd Q=Q_K[0];
+  //Eigen::MatrixXd K=Q_K[1];
+  
+  //double log_det_R=Q.array().log().sum();
+  //List return_vec;
+  //return_vec.push_back(log_det_R);
+  
+  //return_list.push_back(log_det_R);
+  int n=GG.size();
+  //int k=C0.rows();
+  
+  Eigen::MatrixXd GG_matrix;
+  
+  Eigen::MatrixXd m=Eigen::VectorXd::Zero(n);
+  
+  Eigen::VectorXd a;
+  
+  //Eigen::VectorXd Y_minus_a_1_scaled_vec=Eigen::VectorXd::Zero(n); 
+  Eigen::VectorXd Y_minus_a_1=Eigen::VectorXd::Zero(n); 
+  
+  Eigen::VectorXd sqrt_Q=Q.array().sqrt();
+  
+  for(int t=0;t<n;t++){
+    GG_matrix=GG[t];
+    a=GG_matrix*m;
+    Y_minus_a_1[t]=(output[t]-a[0]);
+    
+    // Y_minus_a_1_scaled_vec[t]=(output[t]-a[0])/sqrt_Q[t];
+    m=a+K.row(t).transpose()*(output[t]-a[0]);
+  }
+  
+  ///sigma2_S2=(FRFt+sigma_2*eta)  ####using this will lead to |R|
+  
+  Eigen::VectorXd res=(Y_minus_a_1.array()/Q.array().sqrt()).matrix();
+  return res;
+  //double S2=(Y_minus_a_1.array()*Y_minus_a_1.array()/Q.array()).sum(); 
+  
+}
+
 
 
 /////////the following code is for prediction 
-
-//now consider about the prediction
 ////Get_C_R_K_pred, C and R is for smoothing, K is for filtering the mean  
+// let me also output Q here for determinant
+//it replaces the previous C R K code
 // [[Rcpp::export]] 
-List Get_C_R_K_pred(const VectorXi index, const List GG,const List  W,const Eigen::MatrixXd C0, double VV){ 
+List Get_C_R_K_Q(const VectorXi index, const List GG,const List  W,const Eigen::MatrixXd C0, double VV){ 
   
   
   //index is a sequence where 0 means NA and 1 means observations
@@ -304,7 +348,7 @@ List Get_C_R_K_pred(const VectorXi index, const List GG,const List  W,const Eige
   
   Eigen::MatrixXd C_cur=C[0];
   //int index_num=0;
-
+  
   for(int t=0;t<n;t++){
     
     if(index[t]==1){
@@ -336,14 +380,13 @@ List Get_C_R_K_pred(const VectorXi index, const List GG,const List  W,const Eige
   return_list.push_back(C);
   return_list.push_back(R);
   return_list.push_back(K);
+  return_list.push_back(Q);
   
   return return_list;
 }
 
 
 
-
-////Get_Y_minus_a_1_scaled_matrix_2d  
 // [[Rcpp::export]] 
 List Get_m_a_pred(const VectorXi index, const Eigen::VectorXd output_vec,const List GG,const Eigen::MatrixXd K){
   
@@ -506,15 +549,15 @@ List Kalman_smoother(const VectorXd param,const bool have_noise,const VectorXi i
   
   
   
-  List C_R_K=Get_C_R_K_pred(index_obs, GG,W, W0, VV);
+  List C_R_K_Q=Get_C_R_K_Q(index_obs, GG,W, W0, VV);
   
   
-  List m_a=Get_m_a_pred(index_obs, output, GG,C_R_K[2]);
+  List m_a=Get_m_a_pred(index_obs, output, GG,C_R_K_Q[2]);
   
-  List S_KK=Get_S_KK(index_obs, GG,C_R_K[0],C_R_K[1]);
+  List S_KK=Get_S_KK(index_obs, GG,C_R_K_Q[0],C_R_K_Q[1]);
   
   
-  MatrixXd s_1st=Get_s_1st(m_a[0],m_a[1], C_R_K[0],S_KK[1]);
+  MatrixXd s_1st=Get_s_1st(m_a[0],m_a[1], C_R_K_Q[0],S_KK[1]);
   
   List return_list;
   
@@ -538,6 +581,177 @@ List Kalman_smoother(const VectorXd param,const bool have_noise,const VectorXi i
   
 }
 
+//the following code is for generating samples
+//Sample the prior from Kalman Filter 
+//sample_type 0 means all theta, 1 means first theta, 2 means data (contains the noise)
+// [[Rcpp::export]] 
+MatrixXd  Sample_KF(const List GG,const List  W,const Eigen::MatrixXd C0,const double VV,const  String kernel_type, const int sample_type){
+  int n=GG.size();
+  
+
+  LLT<MatrixXd> lltOfM(C0);    // compute the cholesky decomposition of R called lltofR
+  MatrixXd L = lltOfM.matrixL();   //retrieve factor L  in the decomposition
+  
+  Eigen::MatrixXd theta_sample;
+  
+  Eigen::MatrixXd W_mat;
+  Eigen::MatrixXd G_mat;
+  
+  Eigen::MatrixXd random_norm_theta;
+
+  if(kernel_type=="matern_5_2"){
+     theta_sample=Eigen::MatrixXd::Zero(3,n);
+     random_norm_theta=Eigen::MatrixXd::Zero(3,n+1);
+    
+     for(int t=0;t<3;t++){
+        for(int i=0;i<(n+1);i++){
+           random_norm_theta(t,i)= R::rnorm(0,1.0);
+        }
+      }
+
+  }else if(kernel_type=="exp"){
+      theta_sample=Eigen::MatrixXd::Zero(1,n);
+    
+      random_norm_theta=Eigen::MatrixXd::Zero(1,n+1);
+      for(int i=0;i<(n+1);i++){
+          random_norm_theta(0,i)= R::rnorm(0,1.0);
+      }
+  }
+  
+  Eigen::VectorXd sample_cur=L*random_norm_theta.col(0); // current sample
+  
+  for(int t=0;t<n;t++){
+    W_mat=W[t];
+    G_mat=GG[t];
+    LLT<MatrixXd> lltOfM(W_mat);    
+    L = lltOfM.matrixL();
+    
+    sample_cur=G_mat*sample_cur+L*random_norm_theta.col(t+1);
+    //sample_record[t]=sample_cur(0)+sqrt(VV)*random_norm_y(t);
+    theta_sample.col(t)=sample_cur;
+  }
+  
+  Eigen::MatrixXd sample_record;
+  if(sample_type==0){
+    sample_record=theta_sample;
+  }else if(sample_type==1){
+    sample_record=theta_sample.row(0);
+  }else{
+    Eigen::VectorXd random_norm_y=Eigen::VectorXd::Zero(n);
+    for(int i=0;i<n;i++){
+      random_norm_y[i]=R::rnorm(0,1.0);
+    }
+    sample_record=theta_sample.row(0);
+    sample_record=sample_record+sqrt(VV)*random_norm_y.transpose();
+  }
+  return sample_record;
+}
 
 
+//Sample the posterior from Kalman Filter 
+//sample_type 0 means all theta, 1 means first theta, 2 means data (contains the noise)
+// [[Rcpp::export]] 
+MatrixXd  Sample_KF_post(const VectorXi index_obs,const List C_R_K_Q, const Eigen::MatrixXd W0,const List GG,const List W,const double VV,
+                         const VectorXd output,String kernel_type, const int sample_type){
+  
+  int n=GG.size();
+  
+  List m_a=Get_m_a_pred(index_obs, output, GG,C_R_K_Q[2]);
+  
+  List S_KK=Get_S_KK(index_obs, GG,C_R_K_Q[0],C_R_K_Q[1]);
+  
+  MatrixXd S_matrix;
+  List S_list=S_KK[0];
+  List C=C_R_K_Q[0];
+  Eigen::MatrixXd C_here=C[n]; //it looks C has n+1 terms but m only have n terms
+  
+  Eigen::MatrixXd theta_sample;
+  Eigen::MatrixXd random_norm_theta;
+  
+  if(kernel_type=="matern_5_2"){
+    theta_sample=Eigen::MatrixXd::Zero(3,n);
+    random_norm_theta=Eigen::MatrixXd::Zero(3,n+1);
+    
+    for(int t=0;t<3;t++){
+      for(int i=0;i<(n+1);i++){
+        random_norm_theta(t,i)= R::rnorm(0,1.0);
+      }
+    }
+  }else if(kernel_type=="exp"){
+    theta_sample=Eigen::MatrixXd::Zero(1,n);
+    
+    random_norm_theta=Eigen::MatrixXd::Zero(1,n+1);
+    for(int i=0;i<(n+1);i++){
+      random_norm_theta(0,i)= R::rnorm(0,1.0);
+    }
+  }
+  
+  Eigen::VectorXd theta_minus_a; 
+  List m=m_a[0];
+  
+  Eigen::VectorXd m_here=m[n-1];
+  
+  LLT<MatrixXd> lltOfC_here(C_here);    // compute the cholesky decomposition of R called lltofR
+  MatrixXd L_C_here = lltOfC_here.matrixL();   //retrieve factor L  in the decomposition
+  
+  Eigen::VectorXd theta_sample_here;
+  
+  theta_sample_here=m_here+L_C_here*random_norm_theta.col(n-1);
+  
+  theta_sample.col(n-1)=theta_sample_here;
+  
+  //done for sample 1
+  List KK_list=S_KK[1];
+  
+  List a=m_a[1];
+  VectorXd a_here;
+  //VectorXd m_here;
+  
+  VectorXd h;
+  MatrixXd KK_matrix;
+  MatrixXd S_matrix_plus_1;
+  
+  MatrixXd H_matrix;
+  
+  for(int t=n-2;t>=0;t--){
 
+    KK_matrix=KK_list[t];
+    a_here=a[t+1];
+    m_here=m[t];
+    h=m_here+KK_matrix.transpose()*(theta_sample_here-a_here);
+    
+    //not sure why is this
+    S_matrix=S_list[t];
+    S_matrix_plus_1=S_list[t+1];
+    
+    
+    H_matrix=S_matrix-KK_matrix.transpose()*S_matrix_plus_1*KK_matrix;
+    
+    //LLT<MatrixXd> lltOfS(S_matrix);    // compute the cholesky decomposition of R called lltofR
+    // MatrixXd L_S = lltOfS.matrixL();   //retrieve factor L  in the decomposition
+    
+    LLT<MatrixXd> lltOfH(H_matrix);    // compute the cholesky decomposition of R called lltofR
+    MatrixXd L_H = lltOfH.matrixL();   //retrieve factor L  in the decomposition
+    
+    theta_sample_here=h+L_H*random_norm_theta.col(t);
+    theta_sample.col(t)=theta_sample_here;
+    
+  }
+  
+  //generat the sample record based different types of tasks
+  Eigen::MatrixXd sample_record;
+  if(sample_type==0){
+    sample_record=theta_sample;
+  }else if(sample_type==1){
+    sample_record=theta_sample.row(0);
+  }else{
+    Eigen::VectorXd random_norm_y=Eigen::VectorXd::Zero(n);
+    for(int i=0;i<n;i++){
+      random_norm_y[i]=R::rnorm(0,1.0);
+    }
+    sample_record=theta_sample.row(0);
+    sample_record=sample_record+sqrt(VV)*random_norm_y.transpose();
+  }
+  return sample_record;
+  
+}

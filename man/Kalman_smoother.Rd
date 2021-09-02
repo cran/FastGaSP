@@ -15,7 +15,7 @@ Kalman_smoother(param,have_noise,index_obs,delta_x_all,output,sigma_2_hat,kernel
   \item{have_noise}{a bool value. If it is true, it means the model contains a noise. 
 %%     ~~Describe \code{response} here~~
 }
-    \item{index_obs}{a vector  where the entries with 1 have observations.}
+    \item{index_obs}{a vector  where the entries with 1 have observations and entries with 0 have no observation.}
 
     \item{delta_x_all}{a vector for the differences between the sorted input and testing input locations.}
     

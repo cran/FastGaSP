@@ -112,9 +112,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Get_C_R_K_pred
-List Get_C_R_K_pred(const VectorXi index, const List GG, const List W, const Eigen::MatrixXd C0, double VV);
-RcppExport SEXP _FastGaSP_Get_C_R_K_pred(SEXP indexSEXP, SEXP GGSEXP, SEXP WSEXP, SEXP C0SEXP, SEXP VVSEXP) {
+// Get_L_inv_y
+VectorXd Get_L_inv_y(const List GG, const double VV, const Eigen::VectorXd Q, const Eigen::MatrixXd K, const Eigen::VectorXd output);
+RcppExport SEXP _FastGaSP_Get_L_inv_y(SEXP GGSEXP, SEXP VVSEXP, SEXP QSEXP, SEXP KSEXP, SEXP outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List >::type GG(GGSEXP);
+    Rcpp::traits::input_parameter< const double >::type VV(VVSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type K(KSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd >::type output(outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(Get_L_inv_y(GG, VV, Q, K, output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Get_C_R_K_Q
+List Get_C_R_K_Q(const VectorXi index, const List GG, const List W, const Eigen::MatrixXd C0, double VV);
+RcppExport SEXP _FastGaSP_Get_C_R_K_Q(SEXP indexSEXP, SEXP GGSEXP, SEXP WSEXP, SEXP C0SEXP, SEXP VVSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -123,7 +138,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const List >::type W(WSEXP);
     Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type C0(C0SEXP);
     Rcpp::traits::input_parameter< double >::type VV(VVSEXP);
-    rcpp_result_gen = Rcpp::wrap(Get_C_R_K_pred(index, GG, W, C0, VV));
+    rcpp_result_gen = Rcpp::wrap(Get_C_R_K_Q(index, GG, W, C0, VV));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -186,25 +201,38 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-
-static const R_CallMethodDef CallEntries[] = {
-    {"_FastGaSP_Construct_W0_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_W0_matern_5_2, 2},
-    {"_FastGaSP_Construct_W0_exp", (DL_FUNC) &_FastGaSP_Construct_W0_exp, 2},
-    {"_FastGaSP_Construct_G_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_G_matern_5_2, 2},
-    {"_FastGaSP_Construct_G_exp", (DL_FUNC) &_FastGaSP_Construct_G_exp, 2},
-    {"_FastGaSP_Construct_W_matern_5_2", (DL_FUNC) &_FastGaSP_Construct_W_matern_5_2, 4},
-    {"_FastGaSP_Construct_W_exp", (DL_FUNC) &_FastGaSP_Construct_W_exp, 4},
-    {"_FastGaSP_Get_Q_K", (DL_FUNC) &_FastGaSP_Get_Q_K, 4},
-    {"_FastGaSP_Get_log_det_S2", (DL_FUNC) &_FastGaSP_Get_log_det_S2, 5},
-    {"_FastGaSP_Get_C_R_K_pred", (DL_FUNC) &_FastGaSP_Get_C_R_K_pred, 5},
-    {"_FastGaSP_Get_m_a_pred", (DL_FUNC) &_FastGaSP_Get_m_a_pred, 4},
-    {"_FastGaSP_Get_S_KK", (DL_FUNC) &_FastGaSP_Get_S_KK, 4},
-    {"_FastGaSP_Get_s_1st", (DL_FUNC) &_FastGaSP_Get_s_1st, 4},
-    {"_FastGaSP_Kalman_smoother", (DL_FUNC) &_FastGaSP_Kalman_smoother, 7},
-    {NULL, NULL, 0}
-};
-
-RcppExport void R_init_FastGaSP(DllInfo *dll) {
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-    R_useDynamicSymbols(dll, FALSE);
+// Sample_KF
+MatrixXd Sample_KF(const List GG, const List W, const Eigen::MatrixXd C0, const double VV, const String kernel_type, const int sample_type);
+RcppExport SEXP _FastGaSP_Sample_KF(SEXP GGSEXP, SEXP WSEXP, SEXP C0SEXP, SEXP VVSEXP, SEXP kernel_typeSEXP, SEXP sample_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List >::type GG(GGSEXP);
+    Rcpp::traits::input_parameter< const List >::type W(WSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type C0(C0SEXP);
+    Rcpp::traits::input_parameter< const double >::type VV(VVSEXP);
+    Rcpp::traits::input_parameter< const String >::type kernel_type(kernel_typeSEXP);
+    Rcpp::traits::input_parameter< const int >::type sample_type(sample_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(Sample_KF(GG, W, C0, VV, kernel_type, sample_type));
+    return rcpp_result_gen;
+END_RCPP
+}
+// Sample_KF_post
+MatrixXd Sample_KF_post(const VectorXi index_obs, const List C_R_K_Q, const Eigen::MatrixXd W0, const List GG, const List W, const double VV, const VectorXd output, String kernel_type, const int sample_type);
+RcppExport SEXP _FastGaSP_Sample_KF_post(SEXP index_obsSEXP, SEXP C_R_K_QSEXP, SEXP W0SEXP, SEXP GGSEXP, SEXP WSEXP, SEXP VVSEXP, SEXP outputSEXP, SEXP kernel_typeSEXP, SEXP sample_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const VectorXi >::type index_obs(index_obsSEXP);
+    Rcpp::traits::input_parameter< const List >::type C_R_K_Q(C_R_K_QSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd >::type W0(W0SEXP);
+    Rcpp::traits::input_parameter< const List >::type GG(GGSEXP);
+    Rcpp::traits::input_parameter< const List >::type W(WSEXP);
+    Rcpp::traits::input_parameter< const double >::type VV(VVSEXP);
+    Rcpp::traits::input_parameter< const VectorXd >::type output(outputSEXP);
+    Rcpp::traits::input_parameter< String >::type kernel_type(kernel_typeSEXP);
+    Rcpp::traits::input_parameter< const int >::type sample_type(sample_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(Sample_KF_post(index_obs, C_R_K_Q, W0, GG, W, VV, output, kernel_type, sample_type));
+    return rcpp_result_gen;
+END_RCPP
 }
