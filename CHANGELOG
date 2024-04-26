@@ -1,3 +1,9 @@
+##FastGaSP 0.5.3
+ * Fix the issues of the unused arguments ‘have_noise’ in Get_C_R_K_Q.Rd and  ‘C0’ in 'Sample_KF_post.Rd'
+ * remove dependence of RobustGaSP
+ * remove the issue of Rd file in show.fgasp function
+ * update the reference in description
+
 ##FastGaSP 0.5.2
  * Update the references in the document	
  * Update the Email address of the maintainer 

@@ -17,9 +17,6 @@ Sample_KF_post(index_obs, C_R_K_Q,W0,GG,W,VV,output,kernel_type,sample_type)
 }
   \item{W}{a list of coefficient matrices defined in the dynamic linear model. 
 }
-  \item{C0}{the covariance matrix of the stationary distribution defined in the dynamic linear model. 
-}
-
   \item{VV}{a numerical value of the variance of the nugget parameter. }
   \item{output}{a vector of the output. }
 

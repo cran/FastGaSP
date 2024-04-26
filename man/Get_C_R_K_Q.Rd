@@ -12,7 +12,6 @@ Get_C_R_K_Q(index,GG,W,C0,VV)
 \arguments{
   \item{index}{a vector of integer of 0 and 1. 0 means no observation at that input and 1 means there is observations at that input.
 }
-  \item{have_noise}{a bool value. If it is true, it means the model contains a noise. }
 %%     ~~Describe \code{response} here~~
     \item{GG}{a list of matrices defined in the dynamic linear model.}
     \item{W}{a list of matrices defined in the dynamic linear model.}

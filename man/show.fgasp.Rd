@@ -10,7 +10,7 @@ Show an \code{fgasp} object.
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
-Function to print the code{fgasp} object. 
+Function to print the \code{fgasp} object. 
 }
 \usage{
 \S4method{show}{fgasp}(object)
