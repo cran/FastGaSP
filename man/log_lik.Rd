@@ -1,19 +1,18 @@
 \name{log_lik}
 \alias{log_lik}
 \title{ 
-Natural logarithm of profile likelihood by the fast computing algorithm
-}
+Natural logarithm of profile likelihood by the fast computing algorithm}
 \description{
 This function computes the natural logarithm of the profile likelihood for the range and nugget parameter (if there is one) after plugging the closed form maximum likelihood estimator for the variance parameter. 
 }
+
 \usage{
 log_lik(param, object)
 }
+
 \arguments{
-  \item{param}{a vector of parameters. The first parameter is the natural logarithm of the inverse range parameter in the kernel function. If the data contain noise, the second parameter is the logarithm of the nugget-variance ratio parameter.
-}
-  \item{object}{an object of  class \code{fgasp}.
-}
+  \item{param}{a vector of parameters. The first parameter is the natural logarithm of the inverse range parameter in the kernel function. If the data contain noise, the second parameter is the logarithm of the nugget-variance ratio parameter.}
+  \item{object}{an object of  class \code{fgasp}.}
 }
 
 \value{

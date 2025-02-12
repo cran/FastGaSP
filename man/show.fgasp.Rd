@@ -1,7 +1,4 @@
-\name{show}
-\alias{show}
-\alias{show.fgasp}
-\alias{show.fgasp-class}
+\name{show.fgasp}
 \alias{show,fgasp-method}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{

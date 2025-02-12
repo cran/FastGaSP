@@ -13,6 +13,8 @@ Construct_G_matern_5_2 <- function(delta_x, lambda) {
     .Call('_FastGaSP_Construct_G_matern_5_2', PACKAGE = 'FastGaSP', delta_x, lambda)
 }
 
+#' @keywords internal
+#' @noRd
 Construct_G_exp <- function(delta_x, lambda) {
     .Call('_FastGaSP_Construct_G_exp', PACKAGE = 'FastGaSP', delta_x, lambda)
 }
@@ -33,8 +35,8 @@ Get_log_det_S2 <- function(param, have_noise, delta_x, output, kernel_type) {
     .Call('_FastGaSP_Get_log_det_S2', PACKAGE = 'FastGaSP', param, have_noise, delta_x, output, kernel_type)
 }
 
-Get_L_inv_y <- function(GG, VV, Q, K, output) {
-    .Call('_FastGaSP_Get_L_inv_y', PACKAGE = 'FastGaSP', GG, VV, Q, K, output)
+Get_L_inv_y <- function(GG, Q, K, output) {
+    .Call('_FastGaSP_Get_L_inv_y', PACKAGE = 'FastGaSP', GG, Q, K, output)
 }
 
 Get_C_R_K_Q <- function(index, GG, W, C0, VV) {
@@ -63,5 +65,97 @@ Sample_KF <- function(GG, W, C0, VV, kernel_type, sample_type) {
 
 Sample_KF_post <- function(index_obs, C_R_K_Q, W0, GG, W, VV, output, kernel_type, sample_type) {
     .Call('_FastGaSP_Sample_KF_post', PACKAGE = 'FastGaSP', index_obs, C_R_K_Q, W0, GG, W, VV, output, kernel_type, sample_type)
+}
+
+Get_L_t_y <- function(GG, Q, K, output) {
+    .Call('_FastGaSP_Get_L_t_y', PACKAGE = 'FastGaSP', GG, Q, K, output)
+}
+
+Get_L_y <- function(GG, Q, K, output) {
+    .Call('_FastGaSP_Get_L_y', PACKAGE = 'FastGaSP', GG, Q, K, output)
+}
+
+Get_L_t_inv_y <- function(GG, Q, K, output) {
+    .Call('_FastGaSP_Get_L_t_inv_y', PACKAGE = 'FastGaSP', GG, Q, K, output)
+}
+
+Get_R_y <- function(GG, Q, K, output) {
+    .Call('_FastGaSP_Get_R_y', PACKAGE = 'FastGaSP', GG, Q, K, output)
+}
+
+Get_Y_minus_a_1_scaled_matrix_2d <- function(output_KF, GG, Q, K) {
+    .Call('_FastGaSP_Get_Y_minus_a_1_scaled_matrix_2d', PACKAGE = 'FastGaSP', output_KF, GG, Q, K)
+}
+
+F_Funct <- function(A_cur, G) {
+    .Call('_FastGaSP_F_Funct', PACKAGE = 'FastGaSP', A_cur, G)
+}
+
+Get_G_log_det_cov <- function(param, output, delta_x, d, kernel_type) {
+    .Call('_FastGaSP_Get_G_log_det_cov', PACKAGE = 'FastGaSP', param, output, delta_x, d, kernel_type)
+}
+
+KF_cpp_eigen <- function(F_t, V_t, G_t, W_t, y) {
+    .Call('_FastGaSP_KF_cpp_eigen', PACKAGE = 'FastGaSP', F_t, V_t, G_t, W_t, y)
+}
+
+cubic_solver <- function(p) {
+    .Call('_FastGaSP_cubic_solver', PACKAGE = 'FastGaSP', p)
+}
+
+fmou_cpp <- function(output, d, M = 50L, threshold = 1e-4, est_U0 = TRUE, est_sigma0_2 = TRUE, track_iterations = FALSE, track_neg_log_lik = FALSE, U0 = NULL, U_init = NULL, rho_init = NULL, sigma2_init = NULL, sigma0_2 = NULL) {
+    .Call('_FastGaSP_fmou_cpp', PACKAGE = 'FastGaSP', output, d, M, threshold, est_U0, est_sigma0_2, track_iterations, track_neg_log_lik, U0, U_init, rho_init, sigma2_init, sigma0_2)
+}
+
+matern_5_2_funct <- function(d, beta_i) {
+    .Call('_FastGaSP_matern_5_2_funct', PACKAGE = 'FastGaSP', d, beta_i)
+}
+
+rcppeigen_get_chol <- function(R) {
+    .Call('_FastGaSP_rcppeigen_get_chol', PACKAGE = 'FastGaSP', R)
+}
+
+F_Funct_Dev_Large_k <- function(A_cur, UD) {
+    .Call('_FastGaSP_F_Funct_Dev_Large_k', PACKAGE = 'FastGaSP', A_cur, UD)
+}
+
+Get_B_U_V_Large_k <- function(A_cur, UD) {
+    .Call('_FastGaSP_Get_B_U_V_Large_k', PACKAGE = 'FastGaSP', A_cur, UD)
+}
+
+Y_Funct <- function(A_cur, B_U_V, tau) {
+    .Call('_FastGaSP_Y_Funct', PACKAGE = 'FastGaSP', A_cur, B_U_V, tau)
+}
+
+F_Funct_Dev <- function(A_cur, G) {
+    .Call('_FastGaSP_F_Funct_Dev', PACKAGE = 'FastGaSP', A_cur, G)
+}
+
+Get_B_U_V <- function(A_cur, G) {
+    .Call('_FastGaSP_Get_B_U_V', PACKAGE = 'FastGaSP', A_cur, G)
+}
+
+Optimization_Stiefel_Manifold <- function(A_ini, G, max_iter) {
+    .Call('_FastGaSP_Optimization_Stiefel_Manifold', PACKAGE = 'FastGaSP', A_ini, G, max_iter)
+}
+
+A_t_times_x_particle <- function(output, A_all_v, num_neighbors_vec, D_y, N_tilde) {
+    .Call('_FastGaSP_A_t_times_x_particle', PACKAGE = 'FastGaSP', output, A_all_v, num_neighbors_vec, D_y, N_tilde)
+}
+
+A_times_x_particle <- function(output, A_all_v, num_neighbors_vec, D, N) {
+    .Call('_FastGaSP_A_times_x_particle', PACKAGE = 'FastGaSP', output, A_all_v, num_neighbors_vec, D, N)
+}
+
+IKF_CG_particle <- function(param, kernel_type, delta_x_all, output, A_all_v, sort_d_all_ix, num_neighbors_vec, tilde_nu, D, N, tol = 1e-6, maxIte = 1000L) {
+    .Call('_FastGaSP_IKF_CG_particle', PACKAGE = 'FastGaSP', param, kernel_type, delta_x_all, output, A_all_v, sort_d_all_ix, num_neighbors_vec, tilde_nu, D, N, tol, maxIte)
+}
+
+IKF_CG_particle_two_interact <- function(param1, param2, kernel_type1, kernel_type2, delta_x_all1, delta_x_all2, A_all_v1, A_all_v2, sort_d_all_ix1, sort_d_all_ix2, num_neighbors_vec1, num_neighbors_vec2, output, tilde_nu, D, N, tol = 1e-6, maxIte = 1000L) {
+    .Call('_FastGaSP_IKF_CG_particle_two_interact', PACKAGE = 'FastGaSP', param1, param2, kernel_type1, kernel_type2, delta_x_all1, delta_x_all2, A_all_v1, A_all_v2, sort_d_all_ix1, sort_d_all_ix2, num_neighbors_vec1, num_neighbors_vec2, output, tilde_nu, D, N, tol, maxIte)
+}
+
+IKF_CG_particle_cell <- function(param, kernel_type, delta_x_all, output, A_all_v, sort_d_all_ix, sigma_2_vec, num_neighbors_vec, tilde_nu, D, n_t_record, tol = 1e-6, maxIte = 1000L) {
+    .Call('_FastGaSP_IKF_CG_particle_cell', PACKAGE = 'FastGaSP', param, kernel_type, delta_x_all, output, A_all_v, sort_d_all_ix, sigma_2_vec, num_neighbors_vec, tilde_nu, D, n_t_record, tol, maxIte)
 }
 

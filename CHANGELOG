@@ -1,3 +1,7 @@
+##FastGaSP 0.6.0
+* Add functions related to the inverse Kalman filter (IKF) algorithm, IKF-CG, GPPCA and FMOU
+* Update the reference in description
+
 ##FastGaSP 0.5.3
  * Fix the issues of the unused arguments ‘have_noise’ in Get_C_R_K_Q.Rd and  ‘C0’ in 'Sample_KF_post.Rd'
  * remove dependence of RobustGaSP

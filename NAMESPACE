@@ -3,9 +3,10 @@ useDynLib(FastGaSP)
 # Import
 import("Rcpp", "methods")
 importFrom("Rcpp", "evalCpp")
-importFrom("stats","rnorm","qnorm","sd","optim","optimize")
+importFrom("stats","rnorm","qnorm","sd","optim","optimize","runif","var")
+importFrom("rstiefel", "rustiefel")
 # Exports
-export(fgasp, log_lik, Get_log_det_S2,Kalman_smoother,Get_C_R_K_Q,Sample_KF,Sample_KF_post,Construct_W0_matern_5_2,Construct_W0_exp,Construct_G_matern_5_2,Construct_G_exp,Construct_W_matern_5_2,Construct_W_exp,Get_L_inv_y)
-exportMethods(show,predict)
-exportClasses(fgasp,predictobj.fgasp)
+export(fgasp,Get_log_det_S2,Construct_W0_matern_5_2,Construct_W0_exp,Construct_G_matern_5_2,Construct_G_exp,Construct_W_matern_5_2,Construct_W_exp, log_lik,Sample_KF,Sample_KF_post,fmou,gppca, simulate_particle,trajectory_data,extract_time_window,Vicsek,f_Vicsek_variation,Get_Q_K,Get_R_y,IKF_CG_particle,A_times_x_particle,A_t_times_x_particle,get_consecutive_data,IKF_CG_particle_cell)
+exportMethods(show,predict,fit.fmou,fit.gppca,predict.fmou,predict.gppca, fit)
+exportClasses(fgasp,predictobj.fgasp,fmou,gppca,particle.data, particle.est)
 

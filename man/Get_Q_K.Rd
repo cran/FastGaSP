@@ -1,27 +1,25 @@
-\name{Get_L_inv_y}
-\alias{Get_L_inv_y}
+\name{Get_Q_K}
+\alias{Get_Q_K}
 \title{ 
-The multiplication of the inverse of L with y
+ one-step-ahead predictive variance and Kalman gain
 }
 \description{
-This function computes the product of the inverse of the L matrix and the output vector, where the L matrix is the Cholesky decomposition of the correlation matrix. Instead of computing the Cholesky matrix, we compute it using the forward filtering algorithm. 
+This function computes the one-step-ahead predictive variance and Kalman gain.
 }
 \usage{
-Get_L_inv_y(GG,Q,K,output)
+Get_Q_K(GG,W,C0,VV)
 }
 \arguments{
-  \item{GG}{a list of matrices defined in the dynamic linear model. 
-}
 %%     ~~Describe \code{response} here~~
-    \item{Q}{a vector defined in the dynamic linear model.    }
-    \item{K}{a matrix defined in the filtering algorithm for the dynamic linear model.  }
-    \item{output}{a vector of output.}
-
+    \item{GG}{a list of matrices defined in the dynamic linear model.}
+    \item{W}{a list of matrices defined in the dynamic linear model.}
+    \item{C0}{a matrix defined in the dynamic linear model.}
+    \item{VV}{a numerical value for the nugget.}
 }
 
 
 \value{
-A vector representing the product of the inverse of the L matrix and the output vector, where the L matrix is the Cholesky decomposition of the correlation matrix. 
+A list of 2 items for Q and K. 
 }
 
 \references{
@@ -33,19 +31,12 @@ M. Gu, Y. Xu (2019), \emph{fast nonseparable gaussian stochastic process with ap
 
 Campagnoli P, Petris G, Petrone S. (2009), \emph{Dynamic linear model with R}. Springer-Verlag New York.
 
-
 }
 
 \author{
 \packageAuthor{FastGaSP}
 
 Maintainer: \packageMaintainer{FastGaSP}
-}
-\seealso{\code{\link{Get_Q_K}} for more details about \eqn{Q} vector and \eqn{K} matrix,
-\code{\link{Get_L_t_y}} for \eqn{L^T y} computation, 
-\code{\link{Get_L_y}} for \eqn{L y} computation, 
-\code{\link{Get_L_t_inv_y}} for \eqn{(L^T)^{-1}y} computation.
-%% ~~objects to See Also as \code{\link{help}}, ~~~
 }
 
 \keyword{internal}

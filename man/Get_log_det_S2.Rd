@@ -1,5 +1,6 @@
 \name{Get_log_det_S2}
 \alias{Get_log_det_S2}
+
 \title{ 
 the natural logarithm of the determinant of the correlation matrix and the estimated sum of squares in the exponent of the profile likelihood
 }
@@ -46,8 +47,12 @@ Maintainer: \packageMaintainer{FastGaSP}
 \seealso{\code{\link{log_lik}} for more details about the profile likelihood.
 %% ~~objects to See Also as \code{\link{help}}, ~~~
 }
-
+%\keyword{documentation}
+%\concept{internal}
 \keyword{internal}
+%\concept{internal}
+%\docType{data}
+
 %\note{
 %%  ~~further notes~~
 %}
