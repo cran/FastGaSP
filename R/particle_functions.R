@@ -1,4 +1,4 @@
-Get_R_y_with_kernel_type = function(beta, tilde_nu, delta_x, output, kernel_type=kernel_type){
+IKF = function(beta, tilde_nu, delta_x, output, kernel_type='matern_5_2'){
   if(kernel_type=='matern_5_2'){
     lambda=sqrt(5)*beta
     
@@ -12,13 +12,12 @@ Get_R_y_with_kernel_type = function(beta, tilde_nu, delta_x, output, kernel_type
     W=Construct_W_exp(1,delta_x,lambda,W0)
   }
   Q_K=Get_Q_K(GG,W,W0,tilde_nu)
-  res=Get_R_y(GG,Q_K[[1]],Q_K[[2]],output)-tilde_nu*output
+  res=Get_R_y(GG,pmax(Q_K[[1]],0),Q_K[[2]],output)#-tilde_nu*output
   
   return(res)
 }
 
 
-### Vicsek
 initialization_Vicsek = function(n_t,v_abs){ ##2D initial position, uniform 
   p0=sqrt(n_t)*runif(n_t*2) ##uniform initial positions, enlarge the box size proportional to the number of particles 
   theta0=2*pi*runif(n_t)#-pi ###uniform direction 
@@ -30,7 +29,7 @@ initialization_Vicsek = function(n_t,v_abs){ ##2D initial position, uniform
 }
 
 
-##
+#
 Vicsek = function(p0,v0,theta0,v_abs,n_t,T_sim,h,cut_r,sigma_0,noise_type='Gaussian'){ ##position, velocity, particle number, time, time interval, sigma is the noise
   pos=matrix(NA,2*n_t,T_sim+1)
   v=matrix(NA,2*n_t,T_sim+1)
@@ -47,19 +46,17 @@ Vicsek = function(p0,v0,theta0,v_abs,n_t,T_sim,h,cut_r,sigma_0,noise_type='Gauss
     
     for(i in 1:n_t){
       input_i=as.vector(pos[(i-1)*2+1:2,t])
-      d_vec_here_all=(input_i-input_here) 
+      d_vec_here_all=(input_i-input_here)
       
       d_here=sqrt(colSums(d_vec_here_all^2))
       
-      ##Nov 5 2022
-      index_neighbor=which(d_here<cut_r&v_here>0) 
-      theta_neighbor=atan2(v_vec_here[2,index_neighbor],v_vec_here[1,index_neighbor])
-      
+      index_neighbor=which(d_here<cut_r&v_here>0)
+      theta_mean = atan2(mean(v_vec_here[2,index_neighbor]),mean(v_vec_here[1,index_neighbor]))
       
       if(noise_type=='Gaussian'){
-        theta_i=mean(theta_neighbor)+sigma_0*rnorm(1)  ##only learn this function 
+        theta_i=theta_mean+sigma_0*rnorm(1)  ##only learn this function
       }else if(noise_type=='Uniform'){
-        theta_i=mean(theta_neighbor)+sigma_0*(runif(1)-0.5)  ##only learn this function 
+        theta_i=theta_mean+sigma_0*(runif(1)-0.5)  ##only learn this function
       }
       
       v[(i-1)*2+1:2,t+1]=c(v_abs*cos(theta_i),v_abs*sin(theta_i))
@@ -73,6 +70,58 @@ Vicsek = function(p0,v0,theta0,v_abs,n_t,T_sim,h,cut_r,sigma_0,noise_type='Gauss
   return(list(pos = pos, v=v, theta=theta))
 }
 
+
+simulate_Vicsek = function(v_abs, n_t, T_sim, h, cut_r, sigma_0, noise_type = 'Gaussian') {
+  # Initialize the system
+  initial_all = initialization_Vicsek(n_t = n_t, v_abs = v_abs)
+  p0 = initial_all$p0 # Initial location
+  v0 = initial_all$v0 # Initial speed
+  theta0 = initial_all$theta0 # Initial velocity angle
+  
+  # Adjust theta0 to be within [-pi, pi]
+  theta0[which(theta0 > pi)] = theta0[which(theta0 > pi)] - 2 * pi
+  
+  # Simulate the trajectory
+  m_Vicsek = Vicsek(
+    p0 = p0, v0 = v0, theta0 = theta0, 
+    v_abs = v_abs, n_t = n_t, 
+    T_sim = T_sim, h = h, cut_r = cut_r, 
+    sigma_0 = sigma_0, noise_type = noise_type
+  )
+  
+  
+  
+  # Split position matrix into x and y lists
+  px_list = split(m_Vicsek$pos[seq(1, nrow(m_Vicsek$pos), 2), ], 
+                  col(m_Vicsek$pos[seq(1, nrow(m_Vicsek$pos), 2), ]))
+  py_list = split(m_Vicsek$pos[seq(2, nrow(m_Vicsek$pos), 2), ], 
+                  col(m_Vicsek$pos[seq(2, nrow(m_Vicsek$pos), 2), ]))
+  
+  # Split velocity matrix into x and y lists
+  vx_list = split(m_Vicsek$v[seq(1, nrow(m_Vicsek$v), 2), ], 
+                  col(m_Vicsek$v[seq(1, nrow(m_Vicsek$v), 2), ]))
+  vy_list = split(m_Vicsek$v[seq(2, nrow(m_Vicsek$v), 2), ], 
+                  col(m_Vicsek$v[seq(2, nrow(m_Vicsek$v), 2), ]))
+  
+  # Split theta matrix into list
+  theta_list = split(m_Vicsek$theta, col(m_Vicsek$theta))
+  
+  new("particle.data",
+      px_list = px_list,
+      py_list = py_list,
+      vx_list = vx_list,
+      vy_list = vy_list,
+      theta_list = theta_list,
+      data_type = "simulation",
+      n_particles = n_t,
+      T_time = T_sim,
+      sigma_0 = sigma_0,
+      radius = cut_r,
+      model = "Vicsek",
+      D_y = 1)
+  
+  
+}
 
 
 get_boundary_grid=function(px_min,px_max,py_min,py_max,nx,ny){
@@ -261,7 +310,7 @@ find_grid_neighbors=function(pos_x_list,pos_y_list, vel_x_list,vel_y_list, time_
   names(neighbors_info) <- paste0("time", time_range)
   for(t in time_range){
     #print(t)
-
+    
     m_grid_here=create_particle_grid(grid_boundary_info=grid_boundary_info,
                                      pos_x=pos_x_list[[t]],pos_y=pos_y_list[[t]],
                                      vel_x=vel_x_list[[t]],vel_y=vel_y_list[[t]],
@@ -277,8 +326,96 @@ find_grid_neighbors=function(pos_x_list,pos_y_list, vel_x_list,vel_y_list, time_
 }
 
 
-form_neighbors_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_list,vel_y_list,
-                                      time_range,grid_boundary_info,neighbors_info){
+#### unnormalized Vicsek #####
+unnormalized_Vicsek <- function(p0,v0,n_t,T_sim,h,cut_r,sigma_0,noise_type='Gaussian'){ ##position, velocity, particle number, time, time interval, sigma is the noise
+  pos=matrix(NA,2*n_t,T_sim+1)
+  v=matrix(NA,2*n_t,T_sim+1)
+  
+  v[,1]=v0
+  pos[,1]=p0
+  
+  for(t in 1:T_sim){
+    input_here=matrix(pos[,t],2,n_t)
+    v_vec_here=matrix(v[,t],2,n_t)
+    #v_here=sqrt(colSums(v_vec_here^2))
+    
+    for(i in 1:n_t){
+      input_i=as.vector(pos[(i-1)*2+1:2,t])
+      d_vec_here_all=(input_i-input_here) 
+      
+      d_here=sqrt(colSums(d_vec_here_all^2))
+      
+      index_neighbor=which(d_here<cut_r) #&v_here>0
+      vy_neighbor=v_vec_here[2,index_neighbor]
+      vx_neighbor=v_vec_here[1,index_neighbor]
+      #theta_neighbor=atan2(v_vec_here[2,index_neighbor],v_vec_here[1,index_neighbor])
+      
+      v[(i-1)*2+1,t+1]=mean(vx_neighbor)
+      v[(i-1)*2+2,t+1]=mean(vy_neighbor)
+      
+      ##add noise
+      if(noise_type=='Gaussian'){
+        v[(i-1)*2+1,t+1]=  v[(i-1)*2+1,t+1]+sigma_0*rnorm(1)  ##
+        v[(i-1)*2+2,t+1]= v[(i-1)*2+2,t+1]+sigma_0*rnorm(1)  ##
+      }else if(noise_type=='Uniform'){
+        v[(i-1)*2+1,t+1]=  v[(i-1)*2+1,t+1]+sigma_0*(runif(1)-0.5)  ##
+        v[(i-1)*2+2,t+1]= v[(i-1)*2+2,t+1]+sigma_0*(runif(1)-0.5)
+      }
+      
+      pos[(i-1)*2+1:2,t+1]=pos[(i-1)*2+1:2,t]+v[(i-1)*2+1:2,t]*h
+      
+    }
+  }
+  
+  
+  return(list(pos = pos, v=v))
+}
+
+simulate_unnormalized_Vicsek = function(v_abs, n_t, T_sim, h, cut_r, sigma_0, noise_type = 'Gaussian') {
+  # Initialize the system
+  initial_all = initialization_Vicsek(n_t = n_t, v_abs = v_abs)
+  p0 = initial_all$p0 # Initial location
+  v0 = initial_all$v0 # Initial speed
+  
+  
+  # Simulate the trajectory
+  m_unnormalized_Vicsek = unnormalized_Vicsek(p0=p0,v0=v0,n_t=n_t,T_sim=T_sim,
+                                              h=h,cut_r=cut_r,sigma_0=sigma_0,noise_type=noise_type)
+  
+  # input_pos_all = m_Vicsek$pos
+  # v_all = m_Vicsek$v
+  # theta_all = m_Vicsek$theta
+  
+  # Split position matrix into x and y lists
+  px_list = split(m_unnormalized_Vicsek$pos[seq(1, nrow(m_unnormalized_Vicsek$pos), 2), ], 
+                  col(m_unnormalized_Vicsek$pos[seq(1, nrow(m_unnormalized_Vicsek$pos), 2), ]))
+  py_list = split(m_unnormalized_Vicsek$pos[seq(2, nrow(m_unnormalized_Vicsek$pos), 2), ], 
+                  col(m_unnormalized_Vicsek$pos[seq(2, nrow(m_unnormalized_Vicsek$pos), 2), ]))
+  
+  # Split velocity matrix into x and y lists
+  vx_list = split(m_unnormalized_Vicsek$v[seq(1, nrow(m_unnormalized_Vicsek$v), 2), ], 
+                  col(m_unnormalized_Vicsek$v[seq(1, nrow(m_unnormalized_Vicsek$v), 2), ]))
+  vy_list = split(m_unnormalized_Vicsek$v[seq(2, nrow(m_unnormalized_Vicsek$v), 2), ], 
+                  col(m_unnormalized_Vicsek$v[seq(2, nrow(m_unnormalized_Vicsek$v), 2), ]))
+  
+  new("particle.data",
+      px_list = px_list,
+      py_list = py_list,
+      vx_list = vx_list,
+      vy_list = vy_list,
+      data_type = "simulation",
+      n_particles = n_t,
+      T_time = T_sim,
+      sigma_0 = sigma_0,
+      radius = cut_r,
+      model = "unnormalized_Vicsek",
+      D_y = 2)
+}
+
+
+
+form_neighbors_unnormalized_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_list,vel_y_list,
+                                                   time_range,grid_boundary_info,neighbors_info,D_y){
   
   T_total = length(time_range)
   n_t = length(pos_x_list[[1]])
@@ -292,11 +429,9 @@ form_neighbors_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_li
   len_x=unname(grid_boundary_info$grid_info['len_x',])
   len_y=unname(grid_boundary_info$grid_info['len_y',])
   
-  ##form training and testing 
-  #A_vec=NULL  ##vectorized A
-  #d_vec=NULL ##vectorized distance
-  A_vec=rep(NA,n_t*T_total*15)
-  theta_vec=rep(NA,n_t*T_total*15) #theta_vec
+  
+  A_vec=rep(NA,n_t*T_total*15*D_y)
+  v_vec=rep(NA,n_t*T_total*15*D_y)
   num_neighbors_vec=rep(NA,n_t*T_total) ##here N neighbor each particle (obs) has
   
   count=0
@@ -311,7 +446,6 @@ form_neighbors_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_li
     
     for(i in 1:n_t){
       input_pos_i=as.vector(c(pos_x_t[i],pos_y_t[i]))
-      #input_vel_i=as.vector(c(vel_x_t[i],vel_y_t[i]))
       
       i_x=ceiling((input_pos_i[1]-Lx_min)/len_x)
       i_y=ceiling((input_pos_i[2]-Ly_min)/len_y)
@@ -332,10 +466,12 @@ form_neighbors_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_li
       n_neighbor=length(index_neighbor)
       num_neighbors_vec[n_t*(i_t-1)+i]=n_neighbor
       
-      theta_vec[count+(1:n_neighbor)]=atan2(m_grid_here[[index_grid]]$neighbor_vel[2,index_neighbor],m_grid_here[[index_grid]]$neighbor_vel[1,index_neighbor])
-      A_vec[count+(1:n_neighbor)]=rep(1/n_neighbor,n_neighbor)
+      v_vec[count*D_y+(1:(n_neighbor*D_y))] = c(m_grid_here[[index_grid]]$neighbor_vel[1,index_neighbor],
+                                                m_grid_here[[index_grid]]$neighbor_vel[2,index_neighbor])
+      A_vec[2*count*D_y+(1:(2*n_neighbor*D_y))]=c(rep(c(1/n_neighbor,0),n_neighbor),rep(c(0,1/n_neighbor),n_neighbor))
       
-      #d_pos_vec[count+(1:n_neighbor)]=d_here[index_neighbor]
+      
+      
       
       count=count+n_neighbor
       
@@ -343,18 +479,19 @@ form_neighbors_Vicsek_with_r=function(threshold_r,pos_x_list,pos_y_list,vel_x_li
     }
   }
   
-
-  A_vec=A_vec[1:count]
-  theta_vec=theta_vec[1:count]
   
-  return(list(A_vec=A_vec, theta_vec=theta_vec, num_neighbors_vec=num_neighbors_vec))
+  A_vec=A_vec[1:(2*count*D_y)]
+  v_vec=v_vec[1:(count*D_y)]
+  
+  return(list(A_vec=A_vec, v_vec=v_vec, num_neighbors_vec=num_neighbors_vec))
 }
 
 
-pred_ho_output_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_boundary_info,
-                                        pos_x_list, pos_y_list, vel_x_list, vel_y_list,
-                                        T_index_train, T_index_ho, output, ho_output, 
-                                        D_y, cut_r_max, tilde_nu, tol, maxIte){
+
+pred_ho_output_unnormalized_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_boundary_info,
+                                                     pos_x_list, pos_y_list, vel_x_list, vel_y_list,
+                                                     T_index_train, T_index_ho, output, ho_output, 
+                                                     D_y, cut_r_max, tilde_nu, tol, maxIte){
   beta=exp(param[1])
   tau=exp(param[2])  ###sigma_2/sigma_2_0
   threshold_r=exp(param[3])/(1+exp(param[3])) * cut_r_max
@@ -363,36 +500,27 @@ pred_ho_output_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_
   T_ho=length(T_index_ho) ##hold out prediction
   n_t = length(pos_x_list[[1]])
   
-  # ##form neighbor of train
-  # ans_neighbors_train=form_neighbors_Vicsek_with_max_cut_r(T_time=T_train,n_t=n_t,threshold_r=threshold_r,
-  #                                                          d_pos_max_vec=max_neighbors_train$d_pos_vec,
-  #                                                          theta_max_vec=max_neighbors_train$neighbors_theta_vec,
-  #                                                          num_neighbor_max_vec=max_neighbors_train$num_neighbors_vec)
   
-  ans_neighbors_train=form_neighbors_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=pos_x_list,pos_y_list=pos_y_list,
-                                                   vel_x_list=vel_x_list,vel_y_list=vel_y_list,time_range=T_index_train,
-                                                   grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info)
-  # ##form neighbor of hold-out cross-validation
-  # ans_neighbors_ho=form_neighbors_Vicsek_with_max_cut_r(T_time=T_ho,n_t=n_t,threshold_r=threshold_r,
-  #                                                       d_pos_max_vec=max_neighbors_ho$d_pos_vec,
-  #                                                       theta_max_vec=max_neighbors_ho$neighbors_theta_vec,
-  #                                                       num_neighbor_max_vec=max_neighbors_ho$num_neighbors_vec)
+  ans_neighbors_train=form_neighbors_unnormalized_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=pos_x_list,pos_y_list=pos_y_list,
+                                                                vel_x_list=vel_x_list,vel_y_list=vel_y_list,time_range=T_index_train,
+                                                                grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info,D_y=D_y)
   
-  ans_neighbors_ho=form_neighbors_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=pos_x_list,pos_y_list=pos_y_list,
-                                                vel_x_list=vel_x_list,vel_y_list=vel_y_list,time_range=T_index_ho,
-                                                grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info)
+  ans_neighbors_ho=form_neighbors_unnormalized_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=pos_x_list,pos_y_list=pos_y_list,
+                                                             vel_x_list=vel_x_list,vel_y_list=vel_y_list,time_range=T_index_ho,
+                                                             grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info,D_y=D_y)
+  
+  N_train=n_t*T_train*D_y 
+  N_ho=n_t*T_ho*D_y
   
   ##sort d_train
-  sort_d_train=sort(ans_neighbors_train$theta_vec,index.return=T) ###sorted d
-  N_tilde=length(ans_neighbors_train$theta_vec) ###N_tilde, distances  
-  N_train=n_t*T_train*D_y ##this one is N in training, the output y dimension
-  N_ho=n_t*T_ho*D_y ##this one is N in testing
+  sort_d_train=sort(ans_neighbors_train$v_vec,index.return=T) ###sorted d
+  N_tilde=length(ans_neighbors_train$v_vec) ###N_tilde, distances  
   delta_x_train=sort_d_train$x[-1]-sort_d_train$x[-N_tilde]
   sort_d_train_ix=sort_d_train$ix
   
   ##form augmented samples for cross-validation
-  N_ho_tilde=length(ans_neighbors_ho$theta_vec)  #number of hold out distance
-  d_aug=c(ans_neighbors_ho$theta_vec,(ans_neighbors_train$theta_vec))
+  N_ho_tilde=length(ans_neighbors_ho$v_vec)  #number of hold out distance
+  d_aug=c(ans_neighbors_ho$v_vec,(ans_neighbors_train$v_vec))
   d_aug_sort=sort(d_aug,index.return=T) ##sort augmented samples, this will have N_aug_tilde log(N_aug_tilde) order?
   d_aug_sort_x=d_aug_sort$x
   d_aug_sort_rev_ix=sort(d_aug_sort$ix,index.return=T)$ix ###this is to reverse the previous sort 
@@ -402,7 +530,7 @@ pred_ho_output_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_
   ###finish construction, now start to predict
   
   m_CG=IKF_CG_particle( param,  kernel_type,   delta_x_train,   output, ans_neighbors_train$A_vec, # [[1]], 
-                        sort_d_train_ix,  ans_neighbors_train$num_neighbors_vec, tilde_nu,
+                        sort_d_train_ix,  ans_neighbors_train$num_neighbors_vec*2, tilde_nu,
                         D_y,   N_train,   tol=tol,  maxIte = maxIte)
   
   ans_CG=m_CG[[1]] 
@@ -411,36 +539,21 @@ pred_ho_output_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_
   ans_CG_tilde=ans_CG*tau ##this gives R_inv_y 
   
   ###z=A_t_sparse_times_x, 
-  w_CG=A_t_times_x_particle(output=ans_CG_tilde, A_all_v=ans_neighbors_train$A_vec,  num_neighbors_vec=ans_neighbors_train$num_neighbors_vec,  
+  w_CG=A_t_times_x_particle(output=ans_CG_tilde, A_all_v=ans_neighbors_train$A_vec,  num_neighbors_vec=2*ans_neighbors_train$num_neighbors_vec,  
                             D_y=D_y, N_tilde=N_tilde)
   w_aug=c(rep(0,N_ho_tilde),w_CG)
   
   # param_here=log(c(beta,tilde_nu)) ##tilde nu is one to stablize the computation
   # pred_mean_aug=R_times_z(param_here, have_noise=T, delta_x=delta_x_aug, z=w_aug[d_aug_sort$ix],
   #                         kernel_type=kernel_type)-tilde_nu*w_aug[d_aug_sort$ix]
-  pred_mean_aug = Get_R_y_with_kernel_type(beta=beta, tilde_nu=tilde_nu, 
-                                           delta_x=delta_x_aug, output=w_aug[d_aug_sort$ix], kernel_type=kernel_type)
-  # if(kernel_type=='matern_5_2'){
-  #   lambda=sqrt(5)*beta
-  #   
-  #   W0=Construct_W0_matern_5_2(1,lambda)  
-  #   GG=Construct_G_matern_5_2(delta_x_aug,lambda) 
-  #   W=Construct_W_matern_5_2(1.0,delta_x_aug,lambda,W0)
-  # }else if(kernel_type=='exp'){
-  #   lambda=beta
-  #   W0=Construct_W0_exp(1,lambda)
-  #   GG=Construct_G_exp(delta_x_aug,lambda) 
-  #   W=Construct_W_exp(1,delta_x_aug,lambda,W0)
-  # }
-  # Q_K=Get_Q_K(GG,W,W0,tilde_nu)
-  # pred_mean_aug=Get_R_y(GG,Q_K[[1]],Q_K[[2]],w_aug[d_aug_sort$ix])-tilde_nu*w_aug[d_aug_sort$ix]
-  
+  pred_mean_aug = IKF(beta=beta, tilde_nu=tilde_nu, 
+                      delta_x=delta_x_aug, output=w_aug[d_aug_sort$ix], kernel_type=kernel_type) - tilde_nu*w_aug[d_aug_sort$ix]
   
   pred_mean_fast=pred_mean_aug[d_aug_sort_rev_ix][1:N_ho_tilde]
   
   ##can only observes output so cross-validation on output
-  pred_mean_ho_output=A_times_x_particle( pred_mean_fast,  ans_neighbors_ho[[1]],  ans_neighbors_ho[[3]],  
-                                          D_y,  N_ho)
+  pred_mean_ho_output=A_times_x_particle(output= pred_mean_fast, A_all_v= ans_neighbors_ho$A_vec,  num_neighbors_vec = 2*ans_neighbors_ho$num_neighbors_vec,  
+                                         D_y,  N_ho)
   
   log_RMSE_ho=1/2*log(mean( (ho_output-pred_mean_ho_output)^2)) ##many pars should work as it contains noises
   
@@ -452,82 +565,24 @@ pred_ho_output_Vicsek_log_RMSE=function(param, kernel_type, neighbors_info,grid_
 }
 
 
-simulate_Vicsek = function(v_abs, n_t, T_sim, h, cut_r, sigma_0, noise_type = 'Gaussian') {
-  # Initialize the system
-  initial_all = initialization_Vicsek(n_t = n_t, v_abs = v_abs)
-  p0 = initial_all$p0 # Initial location
-  v0 = initial_all$v0 # Initial speed
-  theta0 = initial_all$theta0 # Initial velocity angle
-  
-  # Adjust theta0 to be within [-pi, pi]
-  theta0[which(theta0 > pi)] = theta0[which(theta0 > pi)] - 2 * pi
-  
-  # Simulate the trajectory
-  m_Vicsek = Vicsek(
-    p0 = p0, v0 = v0, theta0 = theta0, 
-    v_abs = v_abs, n_t = n_t, 
-    T_sim = T_sim, h = h, cut_r = cut_r, 
-    sigma_0 = sigma_0, noise_type = noise_type
-  )
-  
-  # input_pos_all = m_Vicsek$pos
-  # v_all = m_Vicsek$v
-  # theta_all = m_Vicsek$theta
-  
-  # Split position matrix into x and y lists
-  px_list = split(m_Vicsek$pos[seq(1, nrow(m_Vicsek$pos), 2), ], 
-                     col(m_Vicsek$pos[seq(1, nrow(m_Vicsek$pos), 2), ]))
-  py_list = split(m_Vicsek$pos[seq(2, nrow(m_Vicsek$pos), 2), ], 
-                     col(m_Vicsek$pos[seq(2, nrow(m_Vicsek$pos), 2), ]))
-  
-  # Split velocity matrix into x and y lists
-  vx_list = split(m_Vicsek$v[seq(1, nrow(m_Vicsek$v), 2), ], 
-                  col(m_Vicsek$v[seq(1, nrow(m_Vicsek$v), 2), ]))
-  vy_list = split(m_Vicsek$v[seq(2, nrow(m_Vicsek$v), 2), ], 
-                  col(m_Vicsek$v[seq(2, nrow(m_Vicsek$v), 2), ]))
-  
-  # Split theta matrix into list
-  theta_list = split(m_Vicsek$theta, col(m_Vicsek$theta))
-  
-  new("particle.data",
-      px_list = px_list,
-      py_list = py_list,
-      vx_list = vx_list,
-      vy_list = vy_list,
-      theta_list = theta_list,
-      data_type = "simulation",
-      n_particles = n_t,
-      T_time = T_sim,
-      sigma_0 = sigma_0,
-      radius = cut_r,
-      model = "Vicsek",
-      D_y = 1)
-  
-  
-}
 
-particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param=TRUE, nx=NULL, ny=NULL, #px_list, py_list, vx_list, vy_list, theta_list, n_t, T_sim, D_y=1, 
-                                           kernel_type='matern_5_2', tilde_nu=0.1, tol=1e-6, maxIte=1000, 
-                                           output=NULL, ho_output=NULL, testing_input=NULL, compute_CI = TRUE){ #, testing_output
+particle_interaction_est_unnormalized_Vicsek = function(data_obj, param, cut_r_max, est_param=TRUE, nx=NULL, ny=NULL,
+                                                        kernel_type='matern_5_2', tilde_nu=0.1, tol=1e-6, maxIte=1000, 
+                                                        output=NULL, ho_output=NULL, testing_input=NULL, compute_CI = TRUE){ 
   
   px_list = data_obj@px_list
   py_list = data_obj@py_list
   vx_list = data_obj@vx_list
   vy_list = data_obj@vy_list
-  theta_list = data_obj@theta_list
   n_t = data_obj@n_particles
   T_sim = data_obj@T_time
   D_y = data_obj@D_y
   
   N=n_t*T_sim*D_y 
   
-  ## split train and hold-out validation
-  T_index_time = 1:T_sim
-  T_index_ho=seq(5,T_sim,5) ##every 5 use the last one as holdout
-  T_index_train=(1:T_sim)[-T_index_ho]
   
-  T_train=length(T_index_train) ##length of training data
-  T_ho=length(T_index_ho) ##hold out prediction
+  T_index_time = 1:T_sim
+  
   
   px_min=min(unlist(px_list))
   px_max=max(unlist(px_list))
@@ -557,23 +612,30 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
   
   
   
-  # max_neighbors_train=find_max_neighbors_Vicsek_fast_grid(pos_x_list=px_list[T_index_train],pos_y_list=py_list[T_index_train], 
-  #                                                         vel_x_list=vx_list[T_index_train],vel_y_list=vy_list[T_index_train],
-  #                                                         n_t=n_t,T_time=T_train,
-  #                                                         grid_boundary_info,cut_r_max=cut_r_max,
-  #                                                         apolar_vicsek=F)
-  # #print(nx)
-  # max_neighbors_ho=find_max_neighbors_Vicsek_fast_grid(pos_x_list=px_list[T_index_ho],pos_y_list=py_list[T_index_ho], 
-  #                                                      vel_x_list=vx_list[T_index_ho],vel_y_list=vy_list[T_index_ho],
-  #                                                      n_t=n_t,T_time=T_ho,
-  #                                                      grid_boundary_info,cut_r_max=cut_r_max,
-  #                                                      apolar_vicsek=F)
-  
-  if(is.null(output)) output=unlist(theta_list[1+T_index_train])
-  if(is.null(ho_output)) ho_output=unlist(theta_list[1+T_index_ho])
   
   if(est_param){
-    m_IKF=optim(param,pred_ho_output_Vicsek_log_RMSE, control=list(maxit=200),
+    ## split train and hold-out validation
+    T_index_ho=seq(5,T_sim,5) ##every 5 use the last one as holdout
+    T_index_train=(1:T_sim)[-T_index_ho]
+    
+    T_train=length(T_index_train) ##length of training data
+    T_ho=length(T_index_ho) ##hold out prediction
+    
+    if(is.null(output)){
+      output=as.vector(rbind(
+        unlist(vx_list[T_index_train + 1]),
+        unlist(vy_list[T_index_train + 1])
+      ))#as.vector(v_all[,1+T_index_train])  
+    } 
+    if(is.null(ho_output)){
+      ho_output=as.vector(rbind(
+        unlist(vx_list[T_index_ho + 1]),
+        unlist(vy_list[T_index_ho + 1])
+      ))# as.vector(v_all[,1+T_index_ho])  
+    }
+    
+    
+    m_IKF=optim(param,pred_ho_output_unnormalized_Vicsek_log_RMSE, control=list(maxit=200),
                 #lower=c(-8,-8,-8), upper=c(5,1,2),
                 kernel_type=kernel_type, neighbors_info=neighbors_info,grid_boundary_info=grid_boundary_info,
                 pos_x_list=px_list, pos_y_list=py_list, vel_x_list=vx_list, vel_y_list=vy_list,
@@ -581,14 +643,13 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
                 D_y=D_y, cut_r_max=cut_r_max, tilde_nu=tilde_nu, tol=tol, maxIte=maxIte)
     
     while(m_IKF$par[2]>log(10^6)){
-      param[2]=param[2]+runif(1)
-      m_IKF=optim(param,pred_ho_output_Vicsek_log_RMSE, control=list(maxit=200),
+      param[2]=param[2]-log(10)+runif(1)
+      m_IKF=optim(param,pred_ho_output_unnormalized_Vicsek_log_RMSE, control=list(maxit=200),
                   #lower=c(-8,-8,-8), upper=c(5,1,2),
                   kernel_type=kernel_type, neighbors_info=neighbors_info,grid_boundary_info=grid_boundary_info,
                   pos_x_list=px_list, pos_y_list=py_list, vel_x_list=vx_list, vel_y_list=vy_list,
                   T_index_train=T_index_train, T_index_ho=T_index_ho, output=output, ho_output=ho_output, 
                   D_y=D_y, cut_r_max=cut_r_max, tilde_nu=tilde_nu, tol=tol, maxIte=maxIte)
-      
       
     }
     
@@ -605,27 +666,27 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
   
   
   # # prediction
-  # ans_neighbors_all=form_neighbors_Vicsek_fast_grid(pos_x_list=px_list[T_index_time],pos_y_list=py_list[T_index_time], 
-  #                                                   vel_x_list=vx_list[T_index_time],vel_y_list=vy_list[T_index_time],
-  #                                                   n_t=n_t,T_time=T_sim,
-  #                                                   grid_boundary_info=grid_boundary_info,cut_r=threshold_r)
+  output_all=as.vector(rbind(
+    unlist(vx_list[1+T_index_time]),
+    unlist(vy_list[1+T_index_time])
+  ))
   
-  ans_neighbors_all=form_neighbors_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=px_list,pos_y_list=py_list,
-                                                 vel_x_list=vx_list,vel_y_list=vy_list,time_range=T_index_time,
-                                                 grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info)
+  ans_neighbors_all=form_neighbors_unnormalized_Vicsek_with_r(threshold_r=threshold_r,pos_x_list=px_list,pos_y_list=py_list,
+                                                              vel_x_list=vx_list,vel_y_list=vy_list,time_range=T_index_time,
+                                                              grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info,D_y=D_y)
   
   A_all_vec=ans_neighbors_all$A_vec
-  theta_all_vec=ans_neighbors_all$theta_vec
+  v_all_vec=ans_neighbors_all$v_vec
   num_neighbors_all_vec=ans_neighbors_all$num_neighbors_vec
-  sort_theta_all=sort(theta_all_vec,index.return=T)
-  N_tilde_all=length(theta_all_vec) ###this is N_j in the paper
+  sort_v_all=sort(v_all_vec,index.return=T)
+  N_tilde_all=length(v_all_vec) ###this is N_j in the paper
   
   
-  delta_x_all=sort_theta_all$x[-1]-sort_theta_all$x[-N_tilde_all]
-  output_all=unlist(theta_list[1+T_index_time])
+  delta_x_all=sort_v_all$x[-1]-sort_v_all$x[-N_tilde_all]
+  
   
   m_CG=IKF_CG_particle(param=log(c(beta,tau)), kernel_type=kernel_type, delta_x_all=delta_x_all, output=output_all, 
-                       A_all_v = A_all_vec, sort_d_all_ix=sort_theta_all$ix,  num_neighbors_vec=num_neighbors_all_vec, tilde_nu=tilde_nu,
+                       A_all_v = A_all_vec, sort_d_all_ix=sort_v_all$ix,  num_neighbors_vec=2*num_neighbors_all_vec, tilde_nu=tilde_nu,
                        D=D_y,  N=N,   tol=tol,  maxIte = maxIte)
   
   ans_CG=m_CG[[1]] 
@@ -635,7 +696,7 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
   sigma_2_0_est = output_all%*%ans_CG/length(output_all) ##sometimes negative? solved
   
   ###z=A_t_sparse_times_x, get the weight; maybe write this in C++
-  w_CG=A_t_times_x_particle(output=ans_CG_tilde, A_all_v=A_all_vec,  num_neighbors_vec=num_neighbors_all_vec,  
+  w_CG=A_t_times_x_particle(output=ans_CG_tilde, A_all_v=A_all_vec,  num_neighbors_vec=2*num_neighbors_all_vec,  
                             D_y=D_y, N_tilde=N_tilde_all)
   
   
@@ -647,7 +708,7 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
     
     param=log(c(beta,tau))
     
-    d_aug=c(testing_input,(theta_all_vec))
+    d_aug=c(testing_input,(v_all_vec))
     d_aug_sort=sort(d_aug,index.return=T)
     d_aug_sort_x=d_aug_sort$x
     d_aug_sort_rev_ix=sort(d_aug_sort$ix,index.return=T)$ix ###this is to reverse the previous sort 
@@ -661,8 +722,8 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
     # param_tilde=log(c(beta,tilde_nu)) 
     # pred_mean_aug=R_times_z(param_tilde, have_noise=T, delta_x=delta_x_aug, z=w_aug[d_aug_sort$ix],
     #                         kernel_type=kernel_type)-tilde_nu*w_aug[d_aug_sort$ix]
-    pred_mean_aug = Get_R_y_with_kernel_type(beta=beta, tilde_nu=tilde_nu, 
-                                             delta_x=delta_x_aug, output=w_aug[d_aug_sort$ix], kernel_type=kernel_type)
+    pred_mean_aug = IKF(beta=beta, tilde_nu=tilde_nu, 
+                        delta_x=delta_x_aug, output=w_aug[d_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_aug[d_aug_sort$ix]
     # if(kernel_type=='matern_5_2'){
     #   lambda=sqrt(5)*beta
     #   
@@ -686,7 +747,7 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
     if(compute_CI){
       #predictive variance
       c_star=rep(NA,testing_n)
-      r0=abs(outer(testing_input,(theta_all_vec),'-'))
+      r0=abs(outer(testing_input,(v_all_vec),'-'))
       if(kernel_type=='exp'){
         r = exp(-beta*r0)
       }else if(kernel_type=='matern_5_2'){
@@ -698,13 +759,13 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
       for(i in 1:testing_n ){
         #print(i)
         
-        A_r_i=A_times_x_particle(output=r[i,], A_all_v=A_all_vec,  num_neighbors_vec=num_neighbors_all_vec,
+        A_r_i=A_times_x_particle(output=r[i,], A_all_v=A_all_vec,  num_neighbors_vec=2*num_neighbors_all_vec,
                                  D=D_y, N)
         
         #tol=sd(A_r_i)^2*0.01*N_tilde ##can make it smaller
         tol_interval=tol*10^{-4}
         R_inv_r_all=IKF_CG_particle( param=param,  kernel_type=kernel_type,   delta_x_all=delta_x_all,   output=A_r_i,
-                                     A_all_v=A_all_vec, sort_theta_all$ix,  num_neighbors_vec=num_neighbors_all_vec, tilde_nu,
+                                     A_all_v=A_all_vec, sort_v_all$ix,  num_neighbors_vec=2*num_neighbors_all_vec, tilde_nu,
                                      D=D_y,   N=N,   tol=tol_interval,  maxIte = maxIte)
         R_inv_r=R_inv_r_all[[1]]*tau
         r_R_inv_r=A_r_i%*%R_inv_r
@@ -735,11 +796,6 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
   #             pred_mean_fast = pred_mean_fast, LB95 = LB95, UB95 = UB95))
   new("particle.est",
       D_y=D_y,
-      # data = list(
-      #   positions = input_pos_all,
-      #   velocities = v_all,
-      #   angles = theta_all
-      # ),
       parameters = parameters,  # This contains the estimated parameters
       sigma_2_0_est = sigma_2_0_est[1,1],
       predictions = if(!is.null(testing_input)) {
@@ -752,8 +808,8 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
         NULL
       },
       training_data = list(
-        training_angles = theta_all_vec,  # Training angles used in GP model
-        A_theta = A_all_vec,
+        training_velocity = v_all_vec,
+        A_v = A_all_vec,
         num_neighbors = num_neighbors_all_vec
         
       ),
@@ -763,8 +819,7 @@ particle_interaction_est_Vicsek = function(data_obj, param, cut_r_max, est_param
 
 
 
-
-#### Vicsek variation
+#### Vicsek variation #####
 
 f_Vicsek_variation=function(r,a=0.02,b=1,r_min=0.01,r_max=0.8, beta=20){
   fr=-a/(r+r_min)-b*(r-r_max)+a/r_max
@@ -772,7 +827,7 @@ f_Vicsek_variation=function(r,a=0.02,b=1,r_min=0.01,r_max=0.8, beta=20){
 }
 ##here D has to be 2
 Vicsek_variation = function(p0,v0,n_t,D=2,T_sim,h,cut_r,sigma_0,
-                             noise_type='Gaussian'){ ##position, velocity, particle number, time, time interval, sigma is the noise
+                            noise_type='Gaussian'){ ##position, velocity, particle number, time, time interval, sigma is the noise
   pos=matrix(NA,D*n_t,T_sim+1)
   v=matrix(NA,D*n_t,T_sim+1)
   #theta=matrix(NA,n_t,T_sim+1)
@@ -961,7 +1016,7 @@ pred_ho_output_Vicsek_variation_log_RMSE=function(param, kernel_type, neighbors_
   #                                                                 v_vec_max=max_neighbors_ho$v_vec,
   #                                                                 e_vec_max=max_neighbors_ho$e_vec,
   #                                                                 num_neighbors_vec_max=max_neighbors_ho$num_neighbors_vec)
-
+  
   ans_neighbors_ho=form_neighbors_Vicsek_variation_with_r(threshold_r=threshold_r,pos_x_list=pos_x_list,pos_y_list=pos_y_list,
                                                           vel_x_list=vel_x_list,vel_y_list=vel_y_list,time_range=T_index_ho,
                                                           grid_boundary_info=grid_boundary_info,neighbors_info=neighbors_info,D_y=D_y)
@@ -1005,13 +1060,13 @@ pred_ho_output_Vicsek_variation_log_RMSE=function(param, kernel_type, neighbors_
   
   ###finish construction, now start to predict
   m_CG=IKF_CG_particle_two_interact(param1=log(c(beta_v,tau_v)), param2=log(c(beta_f,tau_f)), 
-                               kernel_type1=kernel_type, kernel_type2=kernel_type, 
-                               delta_x_all1=delta_v_train, delta_x_all2=delta_f_train, 
-                               A_all_v1=ans_neighbors_train$A_v_vec, A_all_v2=ans_neighbors_train$A_f_vec, 
-                               sort_d_all_ix1=sort_v_train_ix, sort_d_all_ix2=sort_f_train_ix, 
-                               num_neighbors_vec1=2*ans_neighbors_train$num_neighbors_vec, num_neighbors_vec2=ans_neighbors_train$num_neighbors_vec, 
-                               output=output, tilde_nu=tilde_nu, 
-                               D=D_y, N=N_train, tol = tol, maxIte = maxIte)
+                                    kernel_type1=kernel_type, kernel_type2=kernel_type, 
+                                    delta_x_all1=delta_v_train, delta_x_all2=delta_f_train, 
+                                    A_all_v1=ans_neighbors_train$A_v_vec, A_all_v2=ans_neighbors_train$A_f_vec, 
+                                    sort_d_all_ix1=sort_v_train_ix, sort_d_all_ix2=sort_f_train_ix, 
+                                    num_neighbors_vec1=2*ans_neighbors_train$num_neighbors_vec, num_neighbors_vec2=ans_neighbors_train$num_neighbors_vec, 
+                                    output=output, tilde_nu=tilde_nu, 
+                                    D=D_y, N=N_train, tol = tol, maxIte = maxIte)
   
   
   ans_CG=m_CG[[1]]
@@ -1021,41 +1076,41 @@ pred_ho_output_Vicsek_variation_log_RMSE=function(param, kernel_type, neighbors_
   
   ###z=A_t_sparse_times_x,
   w_CG_v=A_t_times_x_particle(output=ans_CG_v_tilde, A_all_v=ans_neighbors_train$A_v_vec,  num_neighbors_vec=2*ans_neighbors_train$num_neighbors_vec,
-                            D_y=D_y, N_tilde=N_v_tilde)
+                              D_y=D_y, N_tilde=N_v_tilde)
   w_v_aug=c(rep(0,N_v_ho_tilde),w_CG_v)
   
   # param_here=log(c(beta_v,tilde_nu)) ##tilde nu is one to stablize the computation
   # pred_mean_v_aug=R_times_z(param_here, have_noise=T, delta_x=delta_v_aug, z=w_v_aug[v_aug_sort$ix],
   #                           kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
   
-  pred_mean_v_aug = Get_R_y_with_kernel_type(beta=beta_v, tilde_nu=tilde_nu, 
-                                           delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)
+  pred_mean_v_aug = IKF(beta=beta_v, tilde_nu=tilde_nu, 
+                        delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
   
   pred_mean_v_fast=pred_mean_v_aug[v_aug_sort_rev_ix][1:N_v_ho_tilde]
   
   ##can only observes output so cross-validation on output
   pred_mean_v_ho_output=A_times_x_particle( pred_mean_v_fast,  ans_neighbors_ho$A_v_vec,  2*ans_neighbors_ho$num_neighbors_vec,
-                                          D_y,  N_ho)
+                                            D_y,  N_ho)
   
   ##this change this back to original parameterization
   ans_CG_f_tilde=ans_CG*tau_f ##this gives R_inv_y
   
   ###z=A_t_sparse_times_x,
   w_CG_f=A_t_times_x_particle(output=ans_CG_f_tilde, A_all_v=ans_neighbors_train$A_f_vec,  num_neighbors_vec=ans_neighbors_train$num_neighbors_vec,
-                            D_y=D_y, N_tilde=N_f_tilde)
+                              D_y=D_y, N_tilde=N_f_tilde)
   w_f_aug=c(rep(0,N_f_ho_tilde),w_CG_f)
   
   # param_here=log(c(beta_f,tilde_nu)) ##tilde nu is one to stablize the computation
   # pred_mean_f_aug=R_times_z(param_here, have_noise=T, delta_x=delta_f_aug, z=w_f_aug[f_aug_sort$ix],
   #                           kernel_type=kernel_type)-tilde_nu*w_f_aug[f_aug_sort$ix]
-  pred_mean_f_aug = Get_R_y_with_kernel_type(beta=beta_f, tilde_nu=tilde_nu, 
-                                             delta_x=delta_f_aug, output=w_f_aug[f_aug_sort$ix], kernel_type=kernel_type)
+  pred_mean_f_aug = IKF(beta=beta_f, tilde_nu=tilde_nu, 
+                        delta_x=delta_f_aug, output=w_f_aug[f_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_f_aug[f_aug_sort$ix]
   
   pred_mean_f_fast=pred_mean_f_aug[f_aug_sort_rev_ix][1:N_f_ho_tilde]
   
   ##can only observes output so cross-validation on output
   pred_mean_f_ho_output=A_times_x_particle( pred_mean_f_fast,  ans_neighbors_ho$A_f_vec,  ans_neighbors_ho$num_neighbors_vec,
-                                          D_y,  N_ho)
+                                            D_y,  N_ho)
   
   
   pred_mean_ho_output=pred_mean_v_ho_output+pred_mean_f_ho_output
@@ -1074,7 +1129,7 @@ simulate_Vicsek_variation = function(v_abs, n_t, T_sim, h, cut_r, sigma_0, noise
   initial_all=initialization_Vicsek(n_t=n_t,v_abs=v_abs)
   p0=initial_all$p0 # initial location
   v0=initial_all$v0 # initial speed
-
+  
   ##simulate the trajectory
   m_Vicsek_variation=Vicsek_variation(
     p0=p0,v0=v0,n_t=n_t, D = 2,
@@ -1086,9 +1141,9 @@ simulate_Vicsek_variation = function(v_abs, n_t, T_sim, h, cut_r, sigma_0, noise
   
   # Split position matrix into x and y lists
   px_list = split(m_Vicsek_variation$pos[seq(1, nrow(m_Vicsek_variation$pos), 2), ], 
-                     col(m_Vicsek_variation$pos[seq(1, nrow(m_Vicsek_variation$pos), 2), ]))
+                  col(m_Vicsek_variation$pos[seq(1, nrow(m_Vicsek_variation$pos), 2), ]))
   py_list = split(m_Vicsek_variation$pos[seq(2, nrow(m_Vicsek_variation$pos), 2), ], 
-                     col(m_Vicsek_variation$pos[seq(2, nrow(m_Vicsek_variation$pos), 2), ]))
+                  col(m_Vicsek_variation$pos[seq(2, nrow(m_Vicsek_variation$pos), 2), ]))
   
   # Split velocity matrix into x and y lists
   vx_list = split(m_Vicsek_variation$v[seq(1, nrow(m_Vicsek_variation$v), 2), ], 
@@ -1125,11 +1180,7 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
   N=n_t*T_sim*D_y 
   
   T_index_time = 1:T_sim
-  T_index_ho=seq(5,T_sim,5) ##every 5 use the last one as holdout
-  T_index_train=(1:T_sim)[-T_index_ho]
   
-  T_train=length(T_index_train) ##length of training data
-  T_ho=length(T_index_ho) ##hold out prediction
   
   px_min=min(unlist(px_list))
   px_max=max(unlist(px_list))
@@ -1156,20 +1207,28 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
                                        vel_x_list=vx_list,vel_y_list=vy_list, 
                                        time_range=T_index_time, grid_boundary_info=grid_boundary_info)
   
-  if(is.null(output)){
-    output=as.vector(rbind(
-      unlist(vx_list[T_index_train + 1]),
-      unlist(vy_list[T_index_train + 1])
-    ))#as.vector(v_all[,1+T_index_train])  
-  } 
-  if(is.null(ho_output)){
-    ho_output=as.vector(rbind(
-      unlist(vx_list[T_index_ho + 1]),
-      unlist(vy_list[T_index_ho + 1])
-    ))# as.vector(v_all[,1+T_index_ho])  
-  }
+  
   
   if(est_param){
+    T_index_ho=seq(5,T_sim,5) ##every 5 use the last one as holdout
+    T_index_train=(1:T_sim)[-T_index_ho]
+    
+    T_train=length(T_index_train) ##length of training data
+    T_ho=length(T_index_ho) ##hold out prediction
+    
+    if(is.null(output)){
+      output=as.vector(rbind(
+        unlist(vx_list[T_index_train + 1]),
+        unlist(vy_list[T_index_train + 1])
+      ))#as.vector(v_all[,1+T_index_train])  
+    } 
+    if(is.null(ho_output)){
+      ho_output=as.vector(rbind(
+        unlist(vx_list[T_index_ho + 1]),
+        unlist(vy_list[T_index_ho + 1])
+      ))# as.vector(v_all[,1+T_index_ho])  
+    }
+    
     m_IKF=optim(param,pred_ho_output_Vicsek_variation_log_RMSE, control=list(maxit=200),
                 #lower=c(-8,-8,-8), upper=c(5,1,2),
                 kernel_type=kernel_type, neighbors_info=neighbors_info,grid_boundary_info=grid_boundary_info,
@@ -1198,7 +1257,7 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
     
     param = m_IKF$par
   }
- 
+  
   beta_v=exp(param[1])
   beta_f=exp(param[2])
   tau_v=exp(param[3])  
@@ -1207,7 +1266,7 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
   
   parameters = c(beta_v, beta_f, tau_v, tau_f, threshold_r)
   names(parameters) = c('beta_v', 'beta_f', 'tau_v', 'tau_f', 'radius')
-
+  
   
   
   ###for predicting
@@ -1283,8 +1342,8 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
     # pred_mean_v_aug=R_times_z(param_tilde, have_noise=T, delta_x=delta_v_aug, z=w_v_aug[v_aug_sort$ix],
     #                           kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
     
-    pred_mean_v_aug = Get_R_y_with_kernel_type(beta=beta_v, tilde_nu=tilde_nu, 
-                                               delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)
+    pred_mean_v_aug = IKF(beta=beta_v, tilde_nu=tilde_nu, 
+                          delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
     
     pred_mean_v_fast=pred_mean_v_aug[v_aug_sort_rev_ix][1:testing_n]
     
@@ -1307,8 +1366,8 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
     # pred_mean_f_aug=R_times_z(param_tilde, have_noise=T, delta_x=delta_f_aug, z=w_f_aug[f_aug_sort$ix],
     #                           kernel_type=kernel_type)-tilde_nu*w_f_aug[f_aug_sort$ix]
     
-    pred_mean_f_aug = Get_R_y_with_kernel_type(beta=beta_f, tilde_nu=tilde_nu, 
-                                               delta_x=delta_f_aug, output=w_f_aug[f_aug_sort$ix], kernel_type=kernel_type)
+    pred_mean_f_aug = IKF(beta=beta_f, tilde_nu=tilde_nu, 
+                          delta_x=delta_f_aug, output=w_f_aug[f_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_f_aug[f_aug_sort$ix]
     
     pred_mean_f_fast=pred_mean_f_aug[f_aug_sort_rev_ix][1:testing_n]
     
@@ -1459,12 +1518,15 @@ particle_interaction_est_Vicsek_variation=function(data_obj, param, cut_r_max, e
 simulate_particle = function(v_abs, n_t=100, T_sim=5, h=0.1, 
                              cut_r=0.5, sigma_0=0.1, noise_type = 'Gaussian', model = "Vicsek"){
   
-  if (!model %in% c("Vicsek", "two_interactions_Vicsek")){
-    stop("Invalid model specified. Model must be either 'Vicsek' or 'two_interactions_Vicsek'")
+  if (!model %in% c("Vicsek", "unnormalized_Vicsek", "two_interactions_Vicsek")){
+    stop("Invalid model specified. Model must be either 'Vicsek', 'unnormalized_Vicsek', or 'two_interactions_Vicsek'")
   }
   if(model == "Vicsek"){
     sim = simulate_Vicsek(v_abs = v_abs, n_t = n_t, T_sim = T_sim, h = h,
                           cut_r = cut_r, sigma_0 = sigma_0, noise_type = noise_type)
+  }else if(model == "unnormalized_Vicsek"){
+    sim = simulate_unnormalized_Vicsek(v_abs = v_abs, n_t = n_t, T_sim = T_sim, h = h,
+                                       cut_r = cut_r, sigma_0 = sigma_0, noise_type = noise_type)
   }else if(model == "two_interactions_Vicsek"){
     sim = simulate_Vicsek_variation(v_abs = v_abs, n_t = n_t, T_sim = T_sim, h = h, 
                                     cut_r = cut_r, sigma_0 = sigma_0, noise_type = noise_type)
@@ -1507,7 +1569,7 @@ trajectory_data <- function(particle_data) {
     if(t < T_end) {
       n_record[current_idx] <- length(index_current)
     }
-
+    
   }
   
   # Then, create tracking information between consecutive frames
@@ -1602,7 +1664,7 @@ get_consecutive_data <- function(data_obj, variable = c("vx", "vy", "px", "py", 
 form_neighbors_cell_with_r = function(threshold_r,pos_x_list,pos_y_list,vel_x_list,vel_y_list,
                                       time_range,grid_boundary_info,neighbors_info,
                                       direction,apolar_vicsek = FALSE){
-
+  
   n_record = sapply(pos_x_list, length)
   
   Lx_min=unname(grid_boundary_info$grid_info['Lx_min',])
@@ -1632,7 +1694,7 @@ form_neighbors_cell_with_r = function(threshold_r,pos_x_list,pos_y_list,vel_x_li
     n_t = n_record[t]
     
     index_start = ifelse(i_t==1, 0, sum(n_record[time_range][1:(i_t-1)]))
-
+    
     for(i in 1:n_t){
       input_pos_i=as.vector(c(pos_x_t[i],pos_y_t[i]))
       input_vel_i=as.vector(c(vel_x_t[i],vel_y_t[i]))
@@ -1673,7 +1735,7 @@ form_neighbors_cell_with_r = function(threshold_r,pos_x_list,pos_y_list,vel_x_li
       
       count=count+n_neighbor
       
-   
+      
       
     }
     
@@ -1740,12 +1802,12 @@ pred_ho_output_cell_log_RMSE = function(param, kernel_type, neighbors_info,grid_
   delta_v_aug=v_aug_sort_x[2:length(v_aug_sort_x)]-v_aug_sort_x[1:(length(v_aug_sort_x)-1)]
   
   ###finish construction, now start to predict
-
+  
   m_CG=IKF_CG_particle_cell(param=param, kernel_type=kernel_type, delta_x_all=delta_v_train, output=output, 
-                                A_all_v=ans_neighbors_train$A_v_neighbor_record, sort_d_all_ix=sort_v_train_ix, 
-                                sigma_2_vec=sigma_2_record[T_index_train], num_neighbors_vec=ans_neighbors_train$num_neighbors_vec, 
-                                tilde_nu=tilde_nu, 
-                                D=D_y, n_t_record=n_record[T_index_train], tol = tol, maxIte = maxIte)
+                            A_all_v=ans_neighbors_train$A_v_neighbor_record, sort_d_all_ix=sort_v_train_ix, 
+                            sigma_2_vec=sigma_2_record[T_index_train], num_neighbors_vec=ans_neighbors_train$num_neighbors_vec, 
+                            tilde_nu=tilde_nu, 
+                            D=D_y, n_t_record=n_record[T_index_train], tol = tol, maxIte = maxIte)
   
   
   
@@ -1756,14 +1818,14 @@ pred_ho_output_cell_log_RMSE = function(param, kernel_type, neighbors_info,grid_
   
   ###z=A_t_sparse_times_x,
   w_CG_v=A_t_times_x_particle(output=ans_CG_v_tilde, A_all_v=ans_neighbors_train$A_v_neighbor_record,  num_neighbors_vec=ans_neighbors_train$num_neighbors_vec,
-                            D_y=D_y, N_tilde=N_v_tilde)
+                              D_y=D_y, N_tilde=N_v_tilde)
   w_v_aug=c(rep(0,N_v_ho_tilde),w_CG_v)
   
   # param_here=log(c(beta,tilde_nu)) ##tilde nu is one to stablize the computation
   # pred_mean_v_aug=R_times_z(param_here, have_noise=T, delta_x=delta_v_aug, z=w_v_aug[v_aug_sort$ix],
   #                           kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
-  pred_mean_v_aug = Get_R_y_with_kernel_type(beta=beta, tilde_nu=tilde_nu, 
-                                           delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)
+  pred_mean_v_aug = IKF(beta=beta, tilde_nu=tilde_nu, 
+                        delta_x=delta_v_aug, output=w_v_aug[v_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_v_aug[v_aug_sort$ix]
   
   
   pred_mean_v_fast=pred_mean_v_aug[v_aug_sort_rev_ix][1:N_v_ho_tilde]
@@ -1771,7 +1833,7 @@ pred_ho_output_cell_log_RMSE = function(param, kernel_type, neighbors_info,grid_
   
   ##can only observes output so cross-validation on output
   pred_mean_v_ho_output=A_times_x_particle( pred_mean_v_fast,  ans_neighbors_ho$A_v_neighbor_record,  ans_neighbors_ho$num_neighbors_vec,
-                                          D_y,  N_ho)
+                                            D_y,  N_ho)
   
   
   log_RMSE_ho=1/2*log(mean( (ho_output-pred_mean_v_ho_output)^2)) ##many pars should work as it contains noises
@@ -1803,11 +1865,7 @@ particle_interaction_est_cell = function(data_obj, param, cut_r_max, est_param=T
   
   
   T_index_time = 1:T_time
-  T_index_ho=seq(5,T_time,5) ##every 5 use the last one as holdout
-  T_index_train=(1:T_time)[-T_index_ho]
   
-  T_train=length(T_index_train) ##length of training data
-  T_ho=length(T_index_ho) ##hold out prediction
   
   
   px_min=min(unlist(px_list))
@@ -1837,21 +1895,27 @@ particle_interaction_est_cell = function(data_obj, param, cut_r_max, est_param=T
   
   
   #sigma_2_record = rep(NA,T_time)
-  if(direction == "x"){
-    output_all=unlist(vx_end_list[T_index_time])
-    if(is.null(output)) output=unlist(vx_end_list[T_index_train])
-    if(is.null(ho_output)) ho_output=unlist(vx_end_list[T_index_ho])
-    sigma_2_record=sapply(vx_list, var)
-    #testing_input=seq(min(unlist(vx_list[T_index_time])),max(unlist(vx_list[T_index_time])),length.out=testing_n)
-  }else if(direction == "y"){
-    output_all=unlist(vy_end_list[T_index_time])
-    if(is.null(output)) output=unlist(vy_end_list[T_index_train])
-    if(is.null(ho_output)) ho_output=unlist(vy_end_list[T_index_ho])
-    sigma_2_record=sapply(vy_list, var)
-    #testing_input=seq(min(unlist(vy_list[T_index_time])),max(unlist(vy_list[T_index_time])),length.out=testing_n)
-  }
+  
   
   if(est_param){
+    T_index_ho=seq(5,T_time,5) ##every 5 use the last one as holdout
+    T_index_train=(1:T_time)[-T_index_ho]
+    
+    T_train=length(T_index_train) ##length of training data
+    T_ho=length(T_index_ho) ##hold out prediction
+    
+    if(direction == "x"){
+      if(is.null(output)) output=unlist(vx_end_list[T_index_train])
+      if(is.null(ho_output)) ho_output=unlist(vx_end_list[T_index_ho])
+      sigma_2_record=sapply(vx_list, var)
+      #testing_input=seq(min(unlist(vx_list[T_index_time])),max(unlist(vx_list[T_index_time])),length.out=testing_n)
+    }else if(direction == "y"){
+      if(is.null(output)) output=unlist(vy_end_list[T_index_train])
+      if(is.null(ho_output)) ho_output=unlist(vy_end_list[T_index_ho])
+      sigma_2_record=sapply(vy_list, var)
+      #testing_input=seq(min(unlist(vy_list[T_index_time])),max(unlist(vy_list[T_index_time])),length.out=testing_n)
+    }
+    
     #param=log(c(1,50,50)) 
     m_IKF=optim(param,pred_ho_output_cell_log_RMSE, control=list(maxit=200),
                 #lower=c(-8,-8,-8), upper=c(5,1,2),
@@ -1875,6 +1939,16 @@ particle_interaction_est_cell = function(data_obj, param, cut_r_max, est_param=T
   # ans_neighbors_all=form_neighbors_cell_fast_grid(pos_x_list=px_list[T_index_time],pos_y_list=py_list[T_index_time], 
   #                                                 vel_x_list=vx_list[T_index_time],vel_y_list=vy_list[T_index_time],direction,
   #                                                 n_record=n_record[T_index_time],T_time,grid_boundary_info,cut_r=threshold_r,apolar_vicsek=apolar_vicsek)
+  
+  if(direction == "x"){
+    output_all=unlist(vx_end_list[T_index_time])
+    sigma_2_record=sapply(vx_list, var)
+    #testing_input=seq(min(unlist(vx_list[T_index_time])),max(unlist(vx_list[T_index_time])),length.out=testing_n)
+  }else if(direction == "y"){
+    output_all=unlist(vy_end_list[T_index_time])
+    sigma_2_record=sapply(vy_list, var)
+    #testing_input=seq(min(unlist(vy_list[T_index_time])),max(unlist(vy_list[T_index_time])),length.out=testing_n)
+  }
   
   ans_neighbors_all=form_neighbors_cell_with_r(threshold_r=threshold_r,pos_x_list=px_list,pos_y_list=py_list,
                                                vel_x_list=vx_list,vel_y_list=vy_list,time_range=T_index_time,
@@ -1926,8 +2000,8 @@ particle_interaction_est_cell = function(data_obj, param, cut_r_max, est_param=T
     # param_tilde=log(c(beta,tilde_nu)) 
     # pred_mean_aug=R_times_z(param_tilde, have_noise=T, delta_x=delta_x_aug, z=w_aug[v_aug_sort$ix],
     #                         kernel_type=kernel_type)-tilde_nu*w_aug[v_aug_sort$ix]
-    pred_mean_aug = Get_R_y_with_kernel_type(beta=beta, tilde_nu=tilde_nu, 
-                                             delta_x=delta_x_aug, output=w_aug[v_aug_sort$ix], kernel_type=kernel_type)
+    pred_mean_aug = IKF(beta=beta, tilde_nu=tilde_nu, 
+                        delta_x=delta_x_aug, output=w_aug[v_aug_sort$ix], kernel_type=kernel_type)-tilde_nu*w_aug[v_aug_sort$ix]
     
     
     
@@ -2085,8 +2159,8 @@ fit.particle.data = function(data, param, cut_r_max=1, est_param = TRUE, nx = NU
                              testing_inputs, compute_CI = TRUE, num_interaction = (length(param)-1)/2,
                              data_type = data@data_type, model = data@model,  apolar_vicsek=FALSE, direction = NULL){
   if(data_type == "simulation"){
-    if (!model %in% c("Vicsek", "two_interactions_Vicsek")){
-      stop("Invalid model specified. Model must be either 'Vicsek' or 'two_interactions_Vicsek'")
+    if (!model %in% c("unnormalized_Vicsek", "two_interactions_Vicsek")){
+      stop("Invalid model specified. Model must be either 'unnormalized_Vicsek' or 'two_interactions_Vicsek'")
     }
   }
   
@@ -2100,18 +2174,16 @@ fit.particle.data = function(data, param, cut_r_max=1, est_param = TRUE, nx = NU
   if (!is.null(testing_inputs)) testing_inputs = matrix(testing_inputs, ncol = num_interaction)
   
   if(data_type == "simulation"){
-    if(model == "Vicsek"){
+    if(model == "unnormalized_Vicsek"){
       
       if (!is.null(testing_inputs)){
         testing_input = testing_inputs[,1]
       } else {
         testing_input = NULL
       }
-      est = particle_interaction_est_Vicsek(data_obj=data, param=param, cut_r_max=cut_r_max, est_param=est_param, nx = nx, ny = ny,
-                                            # px_list=px_list, py_list=py_list, vx_list=vx_list, vy_list=vy_list, theta_list=theta_list, 
-                                            # n_t=n_t, T_sim=T_time, D_y=D_y, 
-                                            kernel_type=kernel_type, tilde_nu=tilde_nu, tol=tol, maxIte=maxIte, 
-                                            output=output, ho_output = ho_output, testing_input = testing_input, compute_CI = compute_CI)
+      est = particle_interaction_est_unnormalized_Vicsek(data_obj=data, param=param, cut_r_max=cut_r_max, est_param=est_param, nx = nx, ny = ny,
+                                                         kernel_type=kernel_type, tilde_nu=tilde_nu, tol=tol, maxIte=maxIte, 
+                                                         output=output, ho_output = ho_output, testing_input = testing_input, compute_CI = compute_CI)
       est@model = model
     }else if(model == "two_interactions_Vicsek"){
       if (!is.null(testing_inputs)){
@@ -2122,8 +2194,6 @@ fit.particle.data = function(data, param, cut_r_max=1, est_param = TRUE, nx = NU
         testing_d_input = NULL
       }
       est = particle_interaction_est_Vicsek_variation(data_obj=data, param=param, cut_r_max=cut_r_max, est_param=est_param, nx = nx, ny = ny,
-                                                      # px_list=px_list, py_list=py_list, vx_list=vx_list, vy_list=vy_list,
-                                                      # n_t=n_t, T_sim=T_time, D_y=D_y, 
                                                       kernel_type=kernel_type,tilde_nu=tilde_nu, tol=tol, maxIte=maxIte,
                                                       output=output, ho_output = ho_output, testing_v_input=testing_v_input, testing_d_input=testing_d_input, compute_CI = compute_CI)
       est@model = model
@@ -2146,57 +2216,3 @@ fit.particle.data = function(data, param, cut_r_max=1, est_param = TRUE, nx = NU
 }
 
 
-# residual_bootstrap_Vicsek = function(data_obj, est_obj,B){
-#   
-#   # extract data
-#   px_list = data_obj@px_list
-#   py_list = data_obj@py_list
-#   vx_list = data_obj@vx_list
-#   vy_list = data_obj@vy_list
-#   theta_list = data_obj@theta_list
-#   n_t = data_obj@n_particles
-#   T_sim = data_obj@T_time
-#   D_y = data_obj@D_y
-#   
-#   ## split train and hold-out validation
-#   T_index_time = 1:T_sim
-#   T_index_ho=seq(5,T_sim,5) ##every 5 use the last one as holdout
-#   T_index_train=(1:T_sim)[-T_index_ho]
-#   
-#   T_train=length(T_index_train) ##length of training data
-#   T_ho=T_sim-T_train ##hold out prediction
-#   
-#   px_min=min(unlist(px_list))
-#   px_max=max(unlist(px_list))
-#   py_min=min(unlist(py_list))
-#   py_max=max(unlist(py_list))
-#   
-#   
-#   nx=floor((px_max-px_min)/cut_r_max)
-#   ny=floor((py_max-py_min)/cut_r_max)
-#   
-#   
-#   grid_boundary_info=get_boundary_grid(px_min=px_min,px_max=px_max,
-#                                        py_min=py_min,py_max=py_max,nx=nx,ny=ny)
-#   
-#   # compute residual via prediction
-#   ans_neighbors_all=form_neighbors_Vicsek_fast_grid(pos_x_list=px_list[T_index_time],pos_y_list=py_list[T_index_time], 
-#                                                     vel_x_list=vx_list[T_index_time],vel_y_list=vy_list[T_index_time],
-#                                                     n_t=n_t,T_time=T_sim,
-#                                                     grid_boundary_info=grid_boundary_info,cut_r=threshold_r)
-#   A_all_vec=ans_neighbors_all$A_vec
-#   theta_all_vec=ans_neighbors_all$theta_vec
-#   num_neighbors_all_vec=ans_neighbors_all$num_neighbors_vec
-#   sort_theta_all=sort(theta_all_vec,index.return=T)
-#   N_tilde_all=length(theta_all_vec) ###this is N_j in the paper
-# }
-# 
-# parameter.uncertainty.particle.est = function(est_obj,B){
-#   par = est_obj@parameters
-#   bootstrap_res = matrix(NA, nrow=B, ncol=length(par))
-#   
-#   
-#   
-# 
-#   
-# }

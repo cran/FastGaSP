@@ -32,7 +32,7 @@ Estimates interaction parameters for particle systems using trajectory data with
   \item{compute_CI}{When TRUE, computes the 95\% credible interval for testing_inputs (default: TRUE).}
   \item{num_interaction}{Integer specifying number of interactions to predict (default: (length(param_ini)-1)/2).}
   \item{data_type}{Character string indicating data type ("simulation" or "experiment").}
-  \item{model}{Character string specifying the model type (e.g., "Vicsek").}
+  \item{model}{Character string specifying the model type (e.g., "unnormalized_Vicsek").}
   \item{apolar_vicsek}{When TRUE, considers only neighboring particles moving in the same direction (default: FALSE).}
   \item{direction}{Modeling direction ('x' or 'y') for experimental data analysis.}
 }
@@ -47,12 +47,12 @@ Fang, X., & Gu, M. (2024). \emph{The inverse Kalman filter}. arXiv:2407.10089.
 vx_abs <- 0.5
 vy_abs <- 0.5
 v_abs <- sqrt(vx_abs^2+vy_abs^2)
-sim <- simulate_particle(v_abs=v_abs)
+sim <- simulate_particle(v_abs=v_abs, model = 'unnormalized_Vicsek')
 show(sim)
 
 # Set up testing inputs and initial parameters
 testing_n <- 200
-testing_inputs <- matrix(as.numeric(seq(-pi,pi,(2*pi)/(testing_n-1))),nr=1)
+testing_inputs <- matrix(as.numeric(seq(-1,1,length.out=testing_n)),nr=1)
 cut_r_max=1.5
 param_ini <- log(c(0.3,1000,0.3/(cut_r_max-0.3)))  # Initial parameter values
 

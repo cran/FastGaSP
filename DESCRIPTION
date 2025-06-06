@@ -1,8 +1,8 @@
 Package: FastGaSP
 Type: Package
 Title: Fast and Exact Computation of Gaussian Stochastic Process
-Version: 0.6.0
-Date: 2025-01-22
+Version: 0.6.1
+Date: 2025-06-04
 Authors@R: c(person(given="Mengyang", family="Gu", role=c("aut", "cre"),   email="mengyang@pstat.ucsb.edu"),
   person(given="Xinyi", family="Fang", role=c("aut"), 
   email="xinyifang@ucsb.edu"),
@@ -19,6 +19,6 @@ Imports: Rcpp,rstiefel
 LinkingTo: Rcpp, RcppEigen
 NeedsCompilation: yes
 Repository: CRAN
-Packaged: 2025-02-12 05:12:30 UTC; mengyanggu
+Packaged: 2025-06-05 23:26:01 UTC; mengyanggu
 RoxygenNote: 7.3.2
-Date/Publication: 2025-02-12 12:20:02 UTC
+Date/Publication: 2025-06-06 00:10:02 UTC

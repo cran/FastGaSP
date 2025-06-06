@@ -1,3 +1,8 @@
+##FastGaSP 0.6.1
+* Add the unnormalized_Vicsek function for simulation 
+* Update the fit.particle.data and simulate_particle.Rd functions to integrate the unnormalized_Vicsek simulation
+* Add the IKF function for computing inverse Kalman filter 
+
 ##FastGaSP 0.6.0
 * Add functions related to the inverse Kalman filter (IKF) algorithm, IKF-CG, GPPCA and FMOU
 * Update the reference in description

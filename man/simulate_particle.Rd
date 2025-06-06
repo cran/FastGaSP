@@ -17,7 +17,7 @@
   \item{cut_r}{Radius of interaction between particles (default: 0.5).}
   \item{sigma_0}{Standard deviation of noise (default: 0.1).}
   \item{noise_type}{Distribution of noise: "Gaussian" or "Uniform" (default: "Gaussian").}
-  \item{model}{Type of interaction model: "Vicsek" or "two_interactions_Vicsek" (default: "Vicsek").}
+  \item{model}{Type of interaction model: "Vicsek", "unnormalized_Vicsek", or "two_interactions_Vicsek" (default: "Vicsek").}
 }
 \value{
 Returns an S4 object of class \code{\linkS4class{particle.data}}. See \code{\link{particle.data-class}} for details of the returned object structure.
@@ -41,9 +41,14 @@ v_abs=sqrt(vx_abs^2+vy_abs^2)
 sim1 <- simulate_particle(v_abs=v_abs)
 
 #--------------------------------------------------
+# Example: Simulate using unnormalized variation
+#--------------------------------------------------
+sim2 <- simulate_particle(v_abs=v_abs, model = 'unnormalized_Vicsek')
+
+#--------------------------------------------------
 # Example: Simulate using two-interaction variation
 #--------------------------------------------------
-sim2 <- simulate_particle(v_abs=v_abs, model = 'two_interactions_Vicsek')
+sim3 <- simulate_particle(v_abs=v_abs, model = 'two_interactions_Vicsek')
 }
 \seealso{
 \code{\link{particle.data-class}} for details on the particle.data class structure
